@@ -1,0 +1,184 @@
+ion-content {
+  --background: #e2e2e5;
+}
+
+.page {
+  background: #e2e2e5;
+  display: flex;
+  flex-direction: column;
+  height: calc(100% - 40px);
+  position: absolute;
+  place-content: center;
+  width: 100%;
+  margin: 20px;
+  box-sizing: border-box;
+}
+
+.container {
+  display: flex;
+  height: 320px;
+  margin: 0 auto;
+  width: 640px;
+}
+
+.left {
+  background: #ffffff;
+  height: calc(100% - 40px);
+  padding: 0;
+  top: 20px;
+  position: relative;
+  width: 50%;
+  z-index: 1;
+  animation: panel-in 650ms ease-out both;
+}
+
+.login {
+  color: #474a59;
+  font-size: 50px;
+  font-weight: 900;
+  margin: 50px 40px 40px;
+}
+
+.eula {
+  color: #999;
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 40px;
+}
+
+.right {
+  background: #474a59;
+  box-shadow: 0 0 40px 16px rgba(0, 0, 0, 0.22);
+  color: #f1f1f2;
+  position: relative;
+  width: 50%;
+  animation: panel-in 650ms 100ms ease-out both;
+}
+
+.route {
+  position: absolute;
+  width: 320px;
+}
+
+.right path {
+  fill: none;
+  stroke: url(#linearGradient);
+  stroke-width: 4;
+  stroke-dasharray: 240 1386;
+  stroke-linecap: round;
+}
+
+.form {
+  margin: 40px;
+  position: relative;
+}
+
+.field {
+  --background: transparent;
+  --border-color: transparent;
+  --color: #f2f2f2;
+  --inner-padding-bottom: 0;
+  --inner-padding-top: 0;
+  --padding-start: 0;
+  --inner-padding-end: 0;
+  display: block;
+  min-height: 0;
+  margin: 0;
+}
+
+.field ion-label {
+  color: #c2c2c5;
+  display: block;
+  font-size: 14px;
+  height: 16px;
+  margin: 20px 0 5px;
+}
+
+.field ion-input {
+  --color: #f2f2f2;
+  --placeholder-color: #7f8087;
+  font-size: 20px;
+  height: 30px;
+  line-height: 30px;
+}
+
+.error {
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 0;
+  position: absolute;
+  top: 280px;
+  width: 100%;
+}
+
+.submit-button {
+  --background: transparent;
+  --color: #d0d0d2;
+  --padding-bottom: 0;
+  --padding-end: 0;
+  --padding-start: 0;
+  --padding-top: 0;
+  --box-shadow: none;
+  display: block;
+  height: 30px;
+  margin-top: 20px;
+  min-height: 30px;
+  text-transform: none;
+  width: 100%;
+}
+
+.submit-button:focus {
+  --color: #f2f2f2;
+}
+
+.submit-button:active {
+  --color: #d0d0d2;
+}
+
+.submit-button ion-spinner {
+  margin-right: 8px;
+}
+
+@media (max-width: 767px) {
+  .page {
+    height: auto;
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+
+  .container {
+    align-items: center;
+    flex-direction: column;
+    height: 630px;
+    width: 320px;
+  }
+
+  .left {
+    display: block;
+    height: 100%;
+    left: 20px;
+    max-height: 270px;
+    width: calc(100% - 40px);
+  }
+
+  .right {
+    flex-shrink: 0;
+    height: 100%;
+    max-height: 350px;
+    width: 100%;
+  }
+
+  .route {
+    width: 320px;
+  }
+
+  .form {
+    margin: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .right path { animation: none; }
+}
+
+

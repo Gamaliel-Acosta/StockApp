@@ -1,0 +1,97 @@
+<ion-content [fullscreen]="true">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
+        <span>Stock<span class="brand-accent">App</span></span>
+      </div>
+
+      <p class="nav-title">Navegación principal</p>
+      <nav class="main-nav" aria-label="Navegación principal">
+        <a class="nav-item active" href="/dashboard">
+          <ion-icon name="home-outline"></ion-icon><span>Inicio</span>
+        </a>
+        <a class="nav-item" href="/tabs/tab1">
+          <ion-icon name="cube-outline"></ion-icon><span>Productos</span>
+        </a>
+        <a class="nav-item" href="/tabs/tab2">
+          <ion-icon name="swap-horizontal-outline"></ion-icon><span>Movimientos</span>
+        </a>
+        <a class="nav-item" href="/tabs/tab3">
+          <ion-icon name="person-circle-outline"></ion-icon><span>Perfil</span>
+        </a>
+      </nav>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="mobile-brand">
+          <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
+          <strong>Stock<span class="brand-accent">App</span></strong>
+        </div>
+        <div class="search-wrap">
+          <ion-icon name="search-outline"></ion-icon>
+          <ion-searchbar [(ngModel)]="searchTerm" placeholder="Buscar en todo el sistema..." [debounce]="0"></ion-searchbar>
+        </div>
+        <div class="user-area">
+          <button class="icon-button" aria-label="Notificaciones"><ion-icon name="notifications-outline"></ion-icon><span class="notification-dot"></span></button>
+          <div class="user-profile">
+            <ion-icon name="person-circle-outline"></ion-icon>
+            <span>Hola, Usuario</span>
+            <ion-icon class="user-chevron" name="chevron-down-outline"></ion-icon>
+          </div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-heading">
+          <div>
+            <p class="eyebrow">Panel de control</p>
+            <h1>Dashboard</h1>
+          </div>
+          <span class="last-update">Actualizado hace 5 min</span>
+        </div>
+
+        <section class="summary-panel" aria-labelledby="summary-title">
+          <div class="section-heading"><ion-icon name="bar-chart-outline"></ion-icon><h2 id="summary-title">Resumen general</h2></div>
+          <div class="stats-grid">
+            <article class="stat-card">
+              <span class="stat-label">Productos totales</span><strong>125</strong><span class="stat-note positive">+12% este mes</span>
+            </article>
+            <article class="stat-card warning-card">
+              <span class="stat-label">Stock bajo</span><strong>8 <ion-icon name="warning-outline"></ion-icon></strong><span class="stat-note">Requieren atención</span>
+            </article>
+            <article class="stat-card danger-card">
+              <span class="stat-label">Agotados</span><strong>3 <ion-icon name="alert-circle-outline"></ion-icon></strong><span class="stat-note">Sin existencias</span>
+            </article>
+          </div>
+        </section>
+
+        <div class="dashboard-grid">
+          <section class="content-panel" aria-labelledby="movements-title">
+            <div class="panel-heading"><div class="section-heading"><ion-icon name="list-outline"></ion-icon><h2 id="movements-title">Movimientos recientes</h2></div><button class="text-button">Ver todos <ion-icon name="chevron-forward-outline"></ion-icon></button></div>
+            <div class="movement-list">
+              <div class="movement-row" *ngFor="let movement of filteredMovements">
+                <span class="barcode-icon"><ion-icon [name]="movement.icon"></ion-icon></span>
+                <div class="movement-product"><strong>{{ movement.product }}</strong><span>{{ movement.date }}</span></div>
+                <span class="movement-type" [class.entry]="movement.type === 'Entrada'" [class.exit]="movement.type === 'Salida'"><ion-icon [name]="movement.type === 'Entrada' ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'"></ion-icon>{{ movement.type }}</span>
+                <ion-icon class="row-arrow" name="chevron-forward-outline"></ion-icon>
+              </div>
+              <p class="empty-state" *ngIf="filteredMovements.length === 0">No se encontraron movimientos.</p>
+            </div>
+          </section>
+
+          <section class="content-panel quick-panel" aria-labelledby="quick-title">
+            <div class="panel-heading"><div class="section-heading"><ion-icon name="flash-outline"></ion-icon><h2 id="quick-title">Acciones rápidas</h2></div></div>
+            <div class="quick-actions">
+              <button class="action-button primary"><ion-icon name="add-outline"></ion-icon><span>Agregar producto</span></button>
+              <button class="action-button"><ion-icon name="arrow-down-circle-outline"></ion-icon><span>Registrar entrada</span></button>
+              <button class="action-button"><ion-icon name="arrow-up-circle-outline"></ion-icon><span>Registrar salida</span></button>
+            </div>
+            <div class="inventory-tip"><ion-icon name="cube-outline"></ion-icon><div><strong>Inventario saludable</strong><span>El 91% de tus productos tienen stock.</span></div></div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+</ion-content>

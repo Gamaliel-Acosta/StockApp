@@ -1,0 +1,61 @@
+<ion-content [fullscreen]="true">
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
+        <span>Stock<span class="brand-accent">App</span></span>
+      </div>
+      <p class="nav-title">Navegación principal</p>
+      <nav class="main-nav" aria-label="Navegación principal">
+        <a class="nav-item" href="/dashboard"><ion-icon name="home-outline"></ion-icon><span>Inicio</span></a>
+        <a class="nav-item active" href="/productos"><ion-icon name="cube-outline"></ion-icon><span>Productos</span></a>
+        <a class="nav-item" href="/tabs/tab2"><ion-icon name="swap-horizontal-outline"></ion-icon><span>Movimientos</span></a>
+        <a class="nav-item" href="/tabs/tab3"><ion-icon name="person-circle-outline"></ion-icon><span>Perfil</span></a>
+      </nav>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <div class="mobile-brand"><span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span><strong>Stock<span class="brand-accent">App</span></strong></div>
+        <div class="search-wrap">
+          <ion-icon name="search-outline"></ion-icon>
+          <ion-searchbar [(ngModel)]="searchTerm" placeholder="Buscar en todo el sistema..." [debounce]="0"></ion-searchbar>
+        </div>
+        <div class="user-area">
+          <button class="icon-button" aria-label="Notificaciones"><ion-icon name="notifications-outline"></ion-icon><span class="notification-dot"></span></button>
+          <div class="user-profile"><ion-icon name="person-circle-outline"></ion-icon><span>Hola, Usuario</span><ion-icon class="user-chevron" name="chevron-down-outline"></ion-icon></div>
+        </div>
+      </header>
+
+      <div class="page-content">
+        <div class="page-heading">
+          <div><p class="eyebrow">Catálogo e inventario</p><h1>Productos</h1></div>
+          <span class="last-update">{{ filteredProducts.length }} productos registrados</span>
+        </div>
+
+        <section class="products-panel" aria-labelledby="products-title">
+          <div class="panel-heading">
+            <div class="section-heading"><ion-icon name="list-outline"></ion-icon><h2 id="products-title">Gestión de productos</h2></div>
+            <button class="add-button"><ion-icon name="add-outline"></ion-icon><span>Agregar</span></button>
+          </div>
+          <div class="table-wrap">
+            <div class="product-table table-header">
+              <span>Nombre / Código</span><span>Precio</span><span>Disponible</span><span>Estado</span><span>Acciones</span>
+            </div>
+            <div class="product-table product-row" *ngFor="let product of filteredProducts" [class.low-stock]="getStatus(product) === 'low'" [class.out-of-stock]="getStatus(product) === 'empty'">
+              <div class="product-name"><span class="barcode-icon"><ion-icon name="barcode-outline"></ion-icon></span><span><strong>{{ product.name }}</strong><small>{{ product.code }}</small></span></div>
+              <span class="price">${{ product.price.toFixed(2) }}</span>
+              <span class="available">{{ product.available }}</span>
+              <span class="status-badge" [class.ok]="getStatus(product) === 'available'" [class.warning]="getStatus(product) === 'low'" [class.empty]="getStatus(product) === 'empty'">
+                <ion-icon [name]="getStatus(product) === 'available' ? 'alert-circle-outline' : getStatus(product) === 'low' ? 'warning-outline' : 'alert-circle-outline'"></ion-icon><span>{{ getStatus(product) === 'available' ? 'Disponible' : getStatus(product) === 'low' ? 'Stock bajo' : 'Agotado' }}</span>
+              </span>
+              <div class="row-actions"><button aria-label="Editar producto"><ion-icon name="create-outline"></ion-icon></button><button aria-label="Eliminar producto" (click)="removeProduct(product)"><ion-icon name="trash-outline"></ion-icon></button></div>
+            </div>
+            <p class="empty-state" *ngIf="filteredProducts.length === 0">No se encontraron productos.</p>
+          </div>
+        </section>
+        <div class="legend"><span><i class="legend-dot healthy"></i>Disponible</span><span><i class="legend-dot low"></i>Stock bajo</span><span><i class="legend-dot empty"></i>Agotado</span></div>
+      </div>
+    </main>
+  </div>
+</ion-content>
