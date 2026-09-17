@@ -11,9 +11,9 @@
         <a class="nav-item active" href="/dashboard">
           <ion-icon name="home-outline"></ion-icon><span>Inicio</span>
         </a>
-        <a class="nav-item" href="/tabs/tab1">
+        <ion-button fill="clear" class="nav-item" (click)="goToProductos()">
           <ion-icon name="cube-outline"></ion-icon><span>Productos</span>
-        </a>
+        </ion-button>
         <a class="nav-item" href="/tabs/tab2">
           <ion-icon name="swap-horizontal-outline"></ion-icon><span>Movimientos</span>
         </a>
@@ -49,20 +49,20 @@
             <p class="eyebrow">Panel de control</p>
             <h1>Dashboard</h1>
           </div>
-          <span class="last-update">Actualizado hace 5 min</span>
+          <span class="last-update" *ngIf="updatedAt">Actualizado {{ updatedAt | date:'short' }}</span>
         </div>
 
         <section class="summary-panel" aria-labelledby="summary-title">
           <div class="section-heading"><ion-icon name="bar-chart-outline"></ion-icon><h2 id="summary-title">Resumen general</h2></div>
           <div class="stats-grid">
             <article class="stat-card">
-              <span class="stat-label">Productos totales</span><strong>125</strong><span class="stat-note positive">+12% este mes</span>
+              <span class="stat-label">Productos totales</span><strong>{{ totalProducts }}</strong><span class="stat-note">Registrados</span>
             </article>
             <article class="stat-card warning-card">
-              <span class="stat-label">Stock bajo</span><strong>8 <ion-icon name="warning-outline"></ion-icon></strong><span class="stat-note">Requieren atención</span>
+              <span class="stat-label">Stock bajo</span><strong>{{ lowStock }} <ion-icon name="warning-outline"></ion-icon></strong><span class="stat-note">Requieren atención</span>
             </article>
             <article class="stat-card danger-card">
-              <span class="stat-label">Agotados</span><strong>3 <ion-icon name="alert-circle-outline"></ion-icon></strong><span class="stat-note">Sin existencias</span>
+              <span class="stat-label">Agotados</span><strong>{{ outOfStock }} <ion-icon name="alert-circle-outline"></ion-icon></strong><span class="stat-note">Sin existencias</span>
             </article>
           </div>
         </section>
@@ -77,7 +77,9 @@
                 <span class="movement-type" [class.entry]="movement.type === 'Entrada'" [class.exit]="movement.type === 'Salida'"><ion-icon [name]="movement.type === 'Entrada' ? 'arrow-down-circle-outline' : 'arrow-up-circle-outline'"></ion-icon>{{ movement.type }}</span>
                 <ion-icon class="row-arrow" name="chevron-forward-outline"></ion-icon>
               </div>
-              <p class="empty-state" *ngIf="filteredMovements.length === 0">No se encontraron movimientos.</p>
+              <p class="empty-state" *ngIf="loading">Cargando movimientos...</p>
+              <p class="empty-state" *ngIf="!loading && errorMessage">{{ errorMessage }}</p>
+              <p class="empty-state" *ngIf="!loading && !errorMessage && filteredMovements.length === 0">No se encontraron movimientos.</p>
             </div>
           </section>
 
@@ -88,7 +90,7 @@
               <button class="action-button"><ion-icon name="arrow-down-circle-outline"></ion-icon><span>Registrar entrada</span></button>
               <button class="action-button"><ion-icon name="arrow-up-circle-outline"></ion-icon><span>Registrar salida</span></button>
             </div>
-            <div class="inventory-tip"><ion-icon name="cube-outline"></ion-icon><div><strong>Inventario saludable</strong><span>El 91% de tus productos tienen stock.</span></div></div>
+            <div class="inventory-tip"><ion-icon name="cube-outline"></ion-icon><div><strong>Inventario saludable</strong><span>El {{ healthyPercentage }}% de tus productos tienen stock.</span></div></div>
           </section>
         </div>
       </div>

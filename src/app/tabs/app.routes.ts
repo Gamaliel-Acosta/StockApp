@@ -22,6 +22,14 @@ export const routes: Routes = [
         (m) => m.DashboardPage
       ),
   },
+  {
+    path: 'productos',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('../productos/productos.page').then(
+        (m) => m.ProductosPage
+      ),
+  },
 
   {
     path: 'tabs',

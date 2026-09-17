@@ -1,8 +1,18 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonIcon, IonSearchbar } from '@ionic/angular';
 import { addIcons } from 'ionicons';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api.config';
+interface Product {
+  id: number;
+  name: string;
+  code: string;
+  price: number;
+  available: number;
+}
+
 import {
   addOutline,
   alertCircleOutline,
@@ -20,13 +30,6 @@ import {
   warningOutline,
 } from 'ionicons/icons';
 
-interface Product {
-  name: string;
-  code: string;
-  price: number;
-  available: number;
-}
-
 @Component({
   selector: 'app-productos',
   templateUrl: './productos.page.html',
@@ -36,14 +39,11 @@ interface Product {
 export class ProductosPage implements OnInit {
   searchTerm = '';
 
-  products: Product[] = [
-    { name: 'Producto Name', code: '91010304', price: 9, available: 20 },
-    { name: 'Prod Name Bajo', code: '91010305', price: 8, available: 8 },
-    { name: 'Producto Name 2', code: '91010342', price: 3, available: 110 },
-    { name: 'Producto Name 3', code: '81010304', price: 9, available: 0 },
-  ];
+  products: Product[] = [];
+  loading = false;
+  errorMessage = '';
 
-  constructor() {
+  constructor(private readonly changeDetector: ChangeDetectorRef) {
     addIcons({
       addOutline,
       alertCircleOutline,
@@ -77,11 +77,40 @@ export class ProductosPage implements OnInit {
     return 'available';
   }
 
-  removeProduct(product: Product): void {
-    this.products = this.products.filter((item) => item.code !== product.code);
+  async removeProduct(product: Product): Promise<void> {
+    if (!window.confirm(`¿Eliminar ${product.name}?`)) return;
+    this.errorMessage = '';
+    try {
+      await axios.delete(`${API_ENDPOINTS.productos}/${product.id}`, { timeout: 10000 });
+      this.products = this.products.filter((item) => item.id !== product.id);
+    } catch {
+      this.errorMessage = 'No se pudo eliminar el producto.';
+    }
   }
 
-  ngOnInit() {
+  async ngOnInit(): Promise<void> {
+    await this.loadProducts();
+  }
+
+  async loadProducts(): Promise<void> {
+    this.loading = true;
+    this.errorMessage = '';
+    try {
+      const { data } = await axios.get<Product[]>(API_ENDPOINTS.productos, { timeout: 10000 });
+      this.products = data.map((product) => ({
+        ...product,
+        id: Number(product.id),
+        price: Number(product.price),
+        available: Number(product.available),
+      }));
+    } catch (error: unknown) {
+      this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
+        ? String(error.response.data.error)
+        : 'No se pudieron cargar los productos desde la API.';
+    } finally {
+      this.loading = false;
+      this.changeDetector.detectChanges();
+    }
   }
 
 }

@@ -12,6 +12,7 @@ import {
 } from '@ionic/angular';
 import { Router } from '@angular/router';
 import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api.config';
 
 interface LoginResponse {
   success: boolean;
@@ -43,7 +44,7 @@ type RouteTarget = 'email' | 'password' | 'button';
   ],
 })
 export class LoginPage {
-  private readonly API_URL = '/api/login.php';
+  private readonly API_URL = API_ENDPOINTS.login;
 
   email = '';
   password = '';
@@ -123,16 +124,19 @@ export class LoginPage {
       }
 
       localStorage.setItem('user', JSON.stringify(response.data.user));
+      localStorage.setItem('currentUser', JSON.stringify(response.data.user));
       void this.router
-        .navigate(['/tabs/tab1'], { replaceUrl: true })
+        .navigate(['/dashboard'], { replaceUrl: true })
         .then((navigated) => {
           if (!navigated) {
             localStorage.removeItem('user');
+            localStorage.removeItem('currentUser');
             this.errorMessage = 'No se pudo abrir la pantalla principal.';
           }
         })
         .catch(() => {
           localStorage.removeItem('user');
+          localStorage.removeItem('currentUser');
           this.errorMessage = 'No se pudo abrir la pantalla principal.';
         });
     } catch (error: unknown) {

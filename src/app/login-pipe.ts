@@ -11,6 +11,7 @@ import {
 } from '@ionic/angular';
 import { animate, JSAnimation } from 'animejs';
 import axios from 'axios';
+import { API_ENDPOINTS } from './config/api.config';
 
 @Component({
   selector: 'app-login-pipe',
@@ -296,7 +297,7 @@ export class LoginPipe implements OnInit {
   isLoading: boolean = false;
 
   // URL de la API
-  apiUrl: string = '/api/login.php';
+  readonly apiUrl = API_ENDPOINTS.login;
 
   private router = inject(Router);
   private alertController = inject(AlertController);

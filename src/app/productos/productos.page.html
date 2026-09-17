@@ -51,7 +51,9 @@
               </span>
               <div class="row-actions"><button aria-label="Editar producto"><ion-icon name="create-outline"></ion-icon></button><button aria-label="Eliminar producto" (click)="removeProduct(product)"><ion-icon name="trash-outline"></ion-icon></button></div>
             </div>
-            <p class="empty-state" *ngIf="filteredProducts.length === 0">No se encontraron productos.</p>
+            <p class="empty-state" *ngIf="loading">Cargando productos...</p>
+            <p class="empty-state" *ngIf="!loading && errorMessage">{{ errorMessage }}</p>
+            <p class="empty-state" *ngIf="!loading && !errorMessage && filteredProducts.length === 0">No se encontraron productos.</p>
           </div>
         </section>
         <div class="legend"><span><i class="legend-dot healthy"></i>Disponible</span><span><i class="legend-dot low"></i>Stock bajo</span><span><i class="legend-dot empty"></i>Agotado</span></div>
