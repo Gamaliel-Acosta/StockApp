@@ -4,6 +4,7 @@
 	"npmClient": "npm",
 	"webDir": "www",
 	"packageClassList": [
+		"CapacitorSQLitePlugin",
 		"AppPlugin",
 		"CAPCameraPlugin",
 		"FilesystemPlugin",

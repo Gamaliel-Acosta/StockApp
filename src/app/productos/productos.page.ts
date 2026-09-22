@@ -5,13 +5,7 @@ import { IonContent, IonIcon, IonSearchbar } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api.config';
-interface Product {
-  id: number;
-  name: string;
-  code: string;
-  price: number;
-  available: number;
-}
+import { DatabaseService, Product } from '../services/database.service';
 
 import {
   addOutline,
@@ -43,7 +37,10 @@ export class ProductosPage implements OnInit {
   loading = false;
   errorMessage = '';
 
-  constructor(private readonly changeDetector: ChangeDetectorRef) {
+  constructor(
+    private readonly changeDetector: ChangeDetectorRef,
+    private readonly database: DatabaseService,
+  ) {
     addIcons({
       addOutline,
       alertCircleOutline,
@@ -82,6 +79,7 @@ export class ProductosPage implements OnInit {
     this.errorMessage = '';
     try {
       await axios.delete(`${API_ENDPOINTS.productos}/${product.id}`, { timeout: 10000 });
+      await this.database.deleteProduct(product.id);
       this.products = this.products.filter((item) => item.id !== product.id);
     } catch {
       this.errorMessage = 'No se pudo eliminar el producto.';
@@ -95,18 +93,31 @@ export class ProductosPage implements OnInit {
   async loadProducts(): Promise<void> {
     this.loading = true;
     this.errorMessage = '';
+
     try {
+      await this.database.init();
+      if (this.database.isAvailable) {
+        this.products = await this.database.getProducts();
+      }
+
       const { data } = await axios.get<Product[]>(API_ENDPOINTS.productos, { timeout: 10000 });
-      this.products = data.map((product) => ({
+      const products = data.map((product) => ({
         ...product,
         id: Number(product.id),
         price: Number(product.price),
         available: Number(product.available),
       }));
+
+      if (this.database.isAvailable) {
+        await this.database.saveProducts(products);
+      }
+      this.products = products;
     } catch (error: unknown) {
-      this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
-        ? String(error.response.data.error)
-        : 'No se pudieron cargar los productos desde la API.';
+      if (this.products.length === 0) {
+        this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
+          ? String(error.response.data.error)
+          : 'No se pudieron cargar los productos desde la API.';
+      }
     } finally {
       this.loading = false;
       this.changeDetector.detectChanges();

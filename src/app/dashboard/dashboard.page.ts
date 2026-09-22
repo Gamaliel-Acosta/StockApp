@@ -11,16 +11,12 @@ import {
   IonIcon,
   IonSearchbar,
 } from '@ionic/angular';
+import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import axios from 'axios';
 import { Router } from '@angular/router';
 import { API_ENDPOINTS } from '../config/api.config';
-interface Movement {
-  product: string;
-  type: 'Entrada' | 'Salida';
-  date: string;
-  icon: string;
-}
+import { DatabaseService, Movement } from '../services/database.service';
 
 import {
   addOutline,
@@ -46,7 +42,7 @@ import {
   selector: 'app-dashboard',
   templateUrl: './dashboard.page.html',
   styleUrls: ['./dashboard.page.scss'],
-  imports: [IonButton, IonContent, IonIcon, IonSearchbar, CommonModule, FormsModule],
+  imports: [IonButton, IonContent, IonIcon, IonSearchbar, RouterLink, CommonModule, FormsModule],
 })
 export class DashboardPage implements OnInit {
   searchTerm = '';
@@ -62,6 +58,7 @@ export class DashboardPage implements OnInit {
   constructor(
     private readonly changeDetector: ChangeDetectorRef,
     private readonly router: Router,
+    private readonly database: DatabaseService,
   ) {
   addIcons({
     addOutline,
@@ -90,8 +87,8 @@ export class DashboardPage implements OnInit {
       ? this.movements.filter((movement) => movement.product.toLowerCase().includes(query))
       : this.movements;
   }
-
-  goToProductos(): void {
+  
+    goToProductos(): void {
     void this.router.navigate(['/productos']);
   }
 
@@ -104,6 +101,20 @@ export class DashboardPage implements OnInit {
   this.errorMessage = '';
 
   try {
+    await this.database.init();
+    const cachedDashboard = this.database.isAvailable
+      ? await this.database.getDashboard()
+      : null;
+
+    if (cachedDashboard) {
+      this.totalProducts = cachedDashboard.totalProducts;
+      this.lowStock = cachedDashboard.lowStock;
+      this.outOfStock = cachedDashboard.outOfStock;
+      this.healthyPercentage = cachedDashboard.healthyPercentage;
+      this.movements = cachedDashboard.recentMovements;
+      this.updatedAt = new Date(cachedDashboard.updatedAt);
+    }
+
     const { data } = await axios.get<{
       totalProducts: number;
       lowStock: number;
@@ -126,14 +137,27 @@ export class DashboardPage implements OnInit {
     this.updatedAt = data.updatedAt
       ? new Date(data.updatedAt)
       : null;
+
+    if (this.database.isAvailable) {
+      await this.database.saveDashboard({
+        totalProducts: this.totalProducts,
+        lowStock: this.lowStock,
+        outOfStock: this.outOfStock,
+        healthyPercentage: this.healthyPercentage,
+        recentMovements: this.movements,
+        updatedAt: data.updatedAt,
+      });
+    }
   } catch (error: unknown) {
     console.error('Error al cargar dashboard:', error);
 
-    this.errorMessage =
-      axios.isAxiosError<{ error?: string }>(error) &&
-      error.response?.data?.error
-        ? error.response.data.error
-        : 'No se pudo cargar el dashboard desde la API.';
+    if (this.movements.length === 0) {
+      this.errorMessage =
+        axios.isAxiosError<{ error?: string }>(error) &&
+        error.response?.data?.error
+          ? error.response.data.error
+          : 'No se pudo cargar el dashboard desde la API.';
+    }
   } finally {
     this.loading = false;
 
