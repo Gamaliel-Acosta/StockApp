@@ -1,48 +1,5 @@
 <ion-content [fullscreen]="true">
-  <div class="app-shell">
-    <aside class="sidebar">
-      <div class="brand">
-        <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
-        <span>Stock<span class="brand-accent">App</span></span>
-      </div>
-
-      <p class="nav-title">Navegación principal</p>
-      <nav class="main-nav" aria-label="Navegación principal">
-        <a class="nav-item active" href="/dashboard">
-          <ion-icon name="home-outline"></ion-icon><span>Inicio</span>
-        </a>
-        <ion-button fill="clear" class="nav-item" (click)="goToProductos()">
-          <ion-icon name="cube-outline"></ion-icon><span>Productos</span>
-        </ion-button>
-        <a class="nav-item" href="/tabs/tab2">
-          <ion-icon name="swap-horizontal-outline"></ion-icon><span>Movimientos</span>
-        </a>
-        <a class="nav-item" href="/tabs/tab3">
-          <ion-icon name="person-circle-outline"></ion-icon><span>Perfil</span>
-        </a>
-      </nav>
-    </aside>
-
-    <main class="main-area">
-      <header class="topbar">
-        <div class="mobile-brand">
-          <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
-          <strong>Stock<span class="brand-accent">App</span></strong>
-        </div>
-        <div class="search-wrap">
-          <ion-icon name="search-outline"></ion-icon>
-          <ion-searchbar [(ngModel)]="searchTerm" placeholder="Buscar en todo el sistema..." [debounce]="0"></ion-searchbar>
-        </div>
-        <div class="user-area">
-          <button class="icon-button" aria-label="Notificaciones"><ion-icon name="notifications-outline"></ion-icon><span class="notification-dot"></span></button>
-          <div class="user-profile">
-            <ion-icon name="person-circle-outline"></ion-icon>
-            <span>Hola, Usuario</span>
-            <ion-icon class="user-chevron" name="chevron-down-outline"></ion-icon>
-          </div>
-        </div>
-      </header>
-
+  <main class="main-area">
       <div class="page-content">
         <div class="page-heading">
           <div>
@@ -86,14 +43,21 @@
           <section class="content-panel quick-panel" aria-labelledby="quick-title">
             <div class="panel-heading"><div class="section-heading"><ion-icon name="flash-outline"></ion-icon><h2 id="quick-title">Acciones rápidas</h2></div></div>
             <div class="quick-actions">
-              <button class="action-button primary"><ion-icon name="add-outline"></ion-icon><span>Agregar producto</span></button>
-              <button class="action-button"><ion-icon name="arrow-down-circle-outline"></ion-icon><span>Registrar entrada</span></button>
-              <button class="action-button"><ion-icon name="arrow-up-circle-outline"></ion-icon><span>Registrar salida</span></button>
+              <button class="action-button primary" type="button" (click)="goToProductos()"><ion-icon name="add-outline"></ion-icon><span>Agregar producto</span></button>
+              <button class="action-button" type="button" (click)="openMovementForm('Entrada')"><ion-icon name="arrow-down-circle-outline"></ion-icon><span>Registrar entrada</span></button>
+              <button class="action-button" type="button" (click)="openMovementForm('Salida')"><ion-icon name="arrow-up-circle-outline"></ion-icon><span>Registrar salida</span></button>
             </div>
+            <form class="movement-form" *ngIf="showMovementForm" (ngSubmit)="saveMovement()">
+              <div class="movement-form-title">Registrar {{ movementType.toLowerCase() }}</div>
+              <label>Producto<select name="product" [(ngModel)]="movementProductId" required><option [ngValue]="null" disabled>Selecciona un producto</option><option *ngFor="let product of products" [ngValue]="product.id">{{ product.name }} ({{ product.available }} disponibles)</option></select></label>
+              <label>Cantidad<input name="quantity" type="number" [(ngModel)]="movementQuantity" min="1" step="1" required /></label>
+              <label>Nota <span>(opcional)</span><input name="notes" [(ngModel)]="movementNotes" maxlength="255" /></label>
+              <div class="movement-form-actions"><button class="cancel-button" type="button" (click)="closeMovementForm()">Cancelar</button><button class="save-button" type="submit" [disabled]="savingMovement || products.length === 0">{{ savingMovement ? 'Guardando...' : 'Guardar movimiento' }}</button></div>
+            </form>
+            <p class="form-error" *ngIf="showMovementForm && errorMessage">{{ errorMessage }}</p>
             <div class="inventory-tip"><ion-icon name="cube-outline"></ion-icon><div><strong>Inventario saludable</strong><span>El {{ healthyPercentage }}% de tus productos tienen stock.</span></div></div>
           </section>
         </div>
       </div>
-    </main>
-  </div>
+  </main>
 </ion-content>

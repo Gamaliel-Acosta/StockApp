@@ -1,11 +1,25 @@
 import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { IonContent, IonIcon, IonSearchbar } from '@ionic/angular';
+import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import axios from 'axios';
+import { ActivatedRoute } from '@angular/router';
 import { API_ENDPOINTS } from '../config/api.config';
 import { DatabaseService, Product } from '../services/database.service';
+
+interface ProductsResponse {
+  success: boolean;
+  message: string;
+  data?: Product[];
+}
+
+interface NewProduct {
+  name: string;
+  code: string;
+  price: number | null;
+  available: number | null;
+}
 
 import {
   addOutline,
@@ -28,10 +42,13 @@ import {
   selector: 'app-productos',
   templateUrl: './productos.page.html',
   styleUrls: ['./productos.page.scss'],
-  imports: [IonContent, IonIcon, IonSearchbar, CommonModule, FormsModule],
+  imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
 export class ProductosPage implements OnInit {
   searchTerm = '';
+  showAddForm = false;
+  saving = false;
+  newProduct: NewProduct = this.createEmptyProduct();
 
   products: Product[] = [];
   loading = false;
@@ -40,6 +57,7 @@ export class ProductosPage implements OnInit {
   constructor(
     private readonly changeDetector: ChangeDetectorRef,
     private readonly database: DatabaseService,
+    private readonly route: ActivatedRoute,
   ) {
     addIcons({
       addOutline,
@@ -86,8 +104,60 @@ export class ProductosPage implements OnInit {
     }
   }
 
+  openAddForm(): void {
+    this.newProduct = this.createEmptyProduct();
+    this.errorMessage = '';
+    this.showAddForm = true;
+  }
+
+  closeAddForm(): void {
+    if (!this.saving) this.showAddForm = false;
+  }
+
+  async addProduct(): Promise<void> {
+    const name = this.newProduct.name.trim();
+    const code = this.newProduct.code.trim();
+    const price = Number(this.newProduct.price);
+    const available = Number(this.newProduct.available ?? 0);
+
+    if (!name || !code || !Number.isFinite(price) || price < 0 || !Number.isInteger(available) || available < 0) {
+      this.errorMessage = 'Completa nombre, código, precio y una cantidad válida.';
+      return;
+    }
+
+    this.saving = true;
+    this.errorMessage = '';
+    try {
+      const response = await axios.post<Product>(API_ENDPOINTS.productos, {
+        name,
+        code,
+        price,
+        available,
+      }, { timeout: 10000 });
+      const product = {
+        ...response.data,
+        id: Number(response.data.id),
+        price: Number(response.data.price),
+        available: Number(response.data.available),
+      };
+
+      this.products = [...this.products, product].sort((first, second) => first.name.localeCompare(second.name));
+      if (this.database.isAvailable) await this.database.saveProducts(this.products);
+      this.showAddForm = false;
+      this.newProduct = this.createEmptyProduct();
+    } catch (error: unknown) {
+      this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
+        ? String(error.response.data.error)
+        : 'No se pudo agregar el producto.';
+    } finally {
+      this.saving = false;
+      this.changeDetector.detectChanges();
+    }
+  }
+
   async ngOnInit(): Promise<void> {
     await this.loadProducts();
+    if (this.route.snapshot.queryParamMap.get('add') === '1') this.openAddForm();
   }
 
   async loadProducts(): Promise<void> {
@@ -100,8 +170,15 @@ export class ProductosPage implements OnInit {
         this.products = await this.database.getProducts();
       }
 
-      const { data } = await axios.get<Product[]>(API_ENDPOINTS.productos, { timeout: 10000 });
-      const products = data.map((product) => ({
+      const response = await axios.get<ProductsResponse>(API_ENDPOINTS.productos, {
+        timeout: 10000,
+      });
+
+      if (!response.data.success || !response.data.data) {
+        throw new Error(response.data.message || 'No se pudieron cargar los productos.');
+      }
+
+      const products = response.data.data.map((product) => ({
         ...product,
         id: Number(product.id),
         price: Number(product.price),
@@ -122,6 +199,10 @@ export class ProductosPage implements OnInit {
       this.loading = false;
       this.changeDetector.detectChanges();
     }
+  }
+
+  private createEmptyProduct(): NewProduct {
+    return { name: '', code: '', price: null, available: 0 };
   }
 
 }

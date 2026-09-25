@@ -45,6 +45,12 @@ h1 { margin: 0; color: #f3f6fa; font-size: clamp(28px, 4vw, 38px); letter-spacin
 h2 { margin: 0; color: #dce6ef; font-size: 16px; font-weight: 700; letter-spacing: .2px; text-transform: uppercase; }
 .add-button { display: flex; align-items: center; gap: 7px; min-height: 42px; padding: 0 17px; border: 0; border-radius: 7px; background: #4c91e7; color: white; font-size: 13px; font-weight: 700; }
 .add-button ion-icon { font-size: 20px; }
+.add-form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)) auto; align-items: end; gap: 14px; padding: 16px 20px; border-bottom: 1px solid var(--line); background: #202d3b; }
+.add-form label { display: grid; gap: 6px; color: #b8c6d4; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+.add-form input { width: 100%; min-height: 36px; box-sizing: border-box; padding: 0 10px; border: 1px solid #506174; border-radius: 5px; background: #15202b; color: var(--ink); font: inherit; font-size: 13px; }
+.form-actions { display: flex; gap: 8px; }
+.cancel-button, .save-button { min-height: 36px; padding: 0 12px; border: 0; border-radius: 5px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.cancel-button { background: #344354; color: #d3dde7; }.save-button { background: #4c91e7; color: white; }.save-button:disabled { opacity: .6; }
 .table-wrap { overflow-x: auto; }
 .product-table { display: grid; grid-template-columns: minmax(250px, 2.2fr) minmax(100px, 1fr) minmax(115px, 1fr) minmax(150px, 1.15fr) minmax(110px, .9fr); align-items: center; min-width: 760px; }
 .table-header { min-height: 45px; padding: 0 20px; background: #2a3745; color: #e1e8f0; font-size: 13px; font-weight: 700; }
@@ -81,5 +87,6 @@ h2 { margin: 0; color: #dce6ef; font-size: 16px; font-weight: 700; letter-spacin
 	.search-wrap { order: 3; width: 100%; }
 	.page-content { padding: 25px 16px 35px; }.page-heading { align-items: start; flex-direction: column; gap: 8px; }
 	.panel-heading { padding: 0 15px; }.table-header, .product-row { padding-right: 15px; padding-left: 15px; }.add-button span { display: none; }.add-button { padding: 0 12px; }
+	.add-form { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 16px 15px; }.form-actions { grid-column: 1 / -1; justify-content: flex-end; }
 	.legend { flex-wrap: wrap; }
 }

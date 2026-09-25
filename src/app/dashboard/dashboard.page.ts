@@ -6,17 +6,27 @@ import {
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
-  IonButton,
   IonContent,
   IonIcon,
-  IonSearchbar,
 } from '@ionic/angular';
-import { RouterLink } from '@angular/router';
 import { addIcons } from 'ionicons';
 import axios from 'axios';
 import { Router } from '@angular/router';
 import { API_ENDPOINTS } from '../config/api.config';
-import { DatabaseService, Movement } from '../services/database.service';
+import { DatabaseService, Movement, Product } from '../services/database.service';
+
+interface DashboardResponse {
+  success: boolean;
+  message: string;
+  data?: {
+    totalProducts: number;
+    lowStock: number;
+    outOfStock: number;
+    healthyPercentage: number;
+    recentMovements: Movement[];
+    updatedAt: string;
+  };
+}
 
 import {
   addOutline,
@@ -42,7 +52,7 @@ import {
   selector: 'app-dashboard',
   templateUrl: './dashboard.page.html',
   styleUrls: ['./dashboard.page.scss'],
-  imports: [IonButton, IonContent, IonIcon, IonSearchbar, RouterLink, CommonModule, FormsModule],
+  imports: [IonContent, IonIcon, CommonModule, FormsModule],
 })
 export class DashboardPage implements OnInit {
   searchTerm = '';
@@ -54,6 +64,13 @@ export class DashboardPage implements OnInit {
   updatedAt: Date | null = null;
   loading = false;
   errorMessage = '';
+  products: Product[] = [];
+  showMovementForm = false;
+  movementType: 'Entrada' | 'Salida' = 'Entrada';
+  movementProductId: number | null = null;
+  movementQuantity = 1;
+  movementNotes = '';
+  savingMovement = false;
 
   constructor(
     private readonly changeDetector: ChangeDetectorRef,
@@ -89,8 +106,48 @@ export class DashboardPage implements OnInit {
   }
   
     goToProductos(): void {
-    void this.router.navigate(['/productos']);
-  }
+      void this.router.navigate(['/productos'], { queryParams: { add: '1' } });
+    }
+
+    openMovementForm(type: 'Entrada' | 'Salida'): void {
+      this.movementType = type;
+      this.movementProductId = this.products[0]?.id ?? null;
+      this.movementQuantity = 1;
+      this.movementNotes = '';
+      this.errorMessage = '';
+      this.showMovementForm = true;
+    }
+
+    closeMovementForm(): void {
+      if (!this.savingMovement) this.showMovementForm = false;
+    }
+
+    async saveMovement(): Promise<void> {
+      if (!this.movementProductId || !Number.isInteger(this.movementQuantity) || this.movementQuantity < 1) {
+        this.errorMessage = 'Selecciona un producto y una cantidad válida.';
+        return;
+      }
+
+      this.savingMovement = true;
+      this.errorMessage = '';
+      try {
+        await axios.post(API_ENDPOINTS.movimientos, {
+          product_id: this.movementProductId,
+          type: this.movementType,
+          quantity: this.movementQuantity,
+          notes: this.movementNotes.trim() || null,
+        }, { timeout: 10000 });
+        this.showMovementForm = false;
+        await this.loadDashboard();
+      } catch (error: unknown) {
+        this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
+          ? String(error.response.data.error)
+          : 'No se pudo registrar el movimiento.';
+      } finally {
+        this.savingMovement = false;
+        this.changeDetector.detectChanges();
+      }
+    }
 
   async ngOnInit(): Promise<void> {
     await this.loadDashboard();
@@ -115,28 +172,39 @@ export class DashboardPage implements OnInit {
       this.updatedAt = new Date(cachedDashboard.updatedAt);
     }
 
-    const { data } = await axios.get<{
-      totalProducts: number;
-      lowStock: number;
-      outOfStock: number;
-      healthyPercentage: number;
-      recentMovements: Movement[];
-      updatedAt: string;
-    }>(API_ENDPOINTS.dashboard, {
+    const response = await axios.get<DashboardResponse>(API_ENDPOINTS.dashboard, {
       timeout: 10000,
       headers: {
         Accept: 'application/json',
       },
     });
 
-    this.totalProducts = data.totalProducts;
-    this.lowStock = data.lowStock;
-    this.outOfStock = data.outOfStock;
-    this.healthyPercentage = data.healthyPercentage;
-    this.movements = data.recentMovements ?? [];
-    this.updatedAt = data.updatedAt
-      ? new Date(data.updatedAt)
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.message || 'No se pudo cargar el dashboard.');
+    }
+
+    const dashboard = response.data.data;
+
+    this.totalProducts = dashboard.totalProducts;
+    this.lowStock = dashboard.lowStock;
+    this.outOfStock = dashboard.outOfStock;
+    this.healthyPercentage = dashboard.healthyPercentage;
+    this.movements = dashboard.recentMovements ?? [];
+    this.updatedAt = dashboard.updatedAt
+      ? new Date(dashboard.updatedAt)
       : null;
+
+    const productsResponse = await axios.get<{ success: boolean; data?: Product[] }>(API_ENDPOINTS.productos, {
+      timeout: 10000,
+    });
+    if (productsResponse.data.success && productsResponse.data.data) {
+      this.products = productsResponse.data.data.map((product) => ({
+        ...product,
+        id: Number(product.id),
+        price: Number(product.price),
+        available: Number(product.available),
+      }));
+    }
 
     if (this.database.isAvailable) {
       await this.database.saveDashboard({
@@ -145,7 +213,7 @@ export class DashboardPage implements OnInit {
         outOfStock: this.outOfStock,
         healthyPercentage: this.healthyPercentage,
         recentMovements: this.movements,
-        updatedAt: data.updatedAt,
+        updatedAt: dashboard.updatedAt,
       });
     }
   } catch (error: unknown) {

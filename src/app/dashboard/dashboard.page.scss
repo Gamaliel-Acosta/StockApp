@@ -78,6 +78,15 @@ h2 { margin: 0; color: #dce6ef; font-size: 16px; font-weight: 700; letter-spacin
 .action-button:hover { transform: translateY(-1px); background: #334659; }
 .action-button.primary { border-color: transparent; background: #4c91e7; color: #fff; }
 .action-button ion-icon { font-size: 20px; }
+.movement-form { display: grid; gap: 10px; margin: 0 20px 15px; padding: 14px; border: 1px solid var(--line); border-radius: 6px; background: #202d3b; }
+.movement-form-title { color: #e5edf5; font-size: 13px; font-weight: 700; text-transform: capitalize; }
+.movement-form label { display: grid; gap: 5px; color: #b8c6d4; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.movement-form label span { color: #7d8d9e; font-weight: 400; text-transform: none; }
+.movement-form input, .movement-form select { min-height: 34px; box-sizing: border-box; padding: 0 9px; border: 1px solid #506174; border-radius: 5px; background: #15202b; color: var(--ink); font: inherit; font-size: 12px; }
+.movement-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 3px; }
+.cancel-button, .save-button { min-height: 34px; padding: 0 10px; border: 0; border-radius: 5px; font-size: 11px; font-weight: 700; }
+.cancel-button { background: #344354; color: #d3dde7; }.save-button { background: #4c91e7; color: white; }.save-button:disabled { opacity: .6; }
+.form-error { margin: 0 20px 15px; color: #ef8585; font-size: 11px; }
 .inventory-tip { display: flex; gap: 11px; margin: 0 20px 20px; padding: 13px; border: 1px solid rgba(89, 195, 153, .2); border-radius: 6px; background: rgba(76, 193, 145, .08); color: #64cda0; }
 .inventory-tip ion-icon { flex: 0 0 auto; font-size: 22px; }
 .inventory-tip div { display: grid; gap: 3px; }

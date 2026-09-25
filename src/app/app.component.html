@@ -1,3 +1,25 @@
 <ion-app>
-  <ion-router-outlet></ion-router-outlet>
+  <aside class="sidebar" *ngIf="isAuthenticatedRoute">
+      <div class="brand">
+        <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
+        <span>Stock<span class="brand-accent">App</span></span>
+      </div>
+      <p class="nav-title">Navegación principal</p>
+      <nav class="main-nav" aria-label="Navegación principal">
+        <a class="nav-item" routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }"><ion-icon name="home-outline"></ion-icon><span>Inicio</span></a>
+        <a class="nav-item" routerLink="/productos" routerLinkActive="active"><ion-icon name="cube-outline"></ion-icon><span>Productos</span></a>
+        <a class="nav-item" routerLink="/tabs/tab2" routerLinkActive="active"><ion-icon name="swap-horizontal-outline"></ion-icon><span>Movimientos</span></a>
+        <a class="nav-item" routerLink="/tabs/tab3" routerLinkActive="active"><ion-icon name="person-circle-outline"></ion-icon><span>Perfil</span></a>
+      </nav>
+  </aside>
+
+  <header class="topbar" *ngIf="isAuthenticatedRoute">
+        <div class="mobile-brand"><span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span><strong>Stock<span class="brand-accent">App</span></strong></div>
+        <div class="search-wrap"><ion-icon name="search-outline"></ion-icon><ion-searchbar [(ngModel)]="searchTerm" placeholder="Buscar en todo el sistema..." [debounce]="0"></ion-searchbar></div>
+        <div class="user-area"><button class="icon-button" type="button" aria-label="Notificaciones"><ion-icon name="notifications-outline"></ion-icon><span class="notification-dot"></span></button><div class="user-profile"><ion-icon name="person-circle-outline"></ion-icon><span>Hola, Usuario</span><ion-icon class="user-chevron" name="chevron-down-outline"></ion-icon></div></div>
+  </header>
+
+  <main class="route-content" [class.authenticated-content]="isAuthenticatedRoute">
+    <ion-router-outlet></ion-router-outlet>
+  </main>
 </ion-app>

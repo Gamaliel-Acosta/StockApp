@@ -151,8 +151,11 @@ import { API_ENDPOINTS } from './config/api.config';
 
     .page {
       background: #e2e2e5;
+      box-sizing: border-box;
       display: flex;
       flex-direction: column;
+      min-height: 100%;
+      padding: 20px;
       min-height: 100%;
       justify-content: center;
       align-items: center;
@@ -160,9 +163,8 @@ import { API_ENDPOINTS } from './config/api.config';
 
     @media (max-width: 767px) {
       .page {
-        height: 100%;
-        margin-bottom: 0px;
-        padding-bottom: 0px;
+        justify-content: flex-start;
+        padding: 20px 20px 40px;
       }
     }
 
@@ -170,14 +172,16 @@ import { API_ENDPOINTS } from './config/api.config';
       display: flex;
       height: 320px;
       margin: 0 auto;
-      width: 640px;
+      max-width: 640px;
+      width: 100%;
     }
 
     @media (max-width: 767px) {
       .container {
+        align-items: center;
         flex-direction: column;
-        height: 630px;
-        width: 320px;
+        height: auto;
+        max-width: 320px;
       }
     }
 
@@ -199,6 +203,7 @@ import { API_ENDPOINTS } from './config/api.config';
     }
 
     .login {
+      color: #474a59;
       font-size: 50px;
       font-weight: 900;
       margin: 50px 40px 40px;
@@ -214,6 +219,7 @@ import { API_ENDPOINTS } from './config/api.config';
     .right {
       background: #474A59;
       box-shadow: 0px 0px 40px 16px rgba(0, 0, 0, 0.22);
+      height: 320px;
       color: #F1F1F2;
       position: relative;
       width: 50%;
@@ -222,7 +228,7 @@ import { API_ENDPOINTS } from './config/api.config';
     @media (max-width: 767px) {
       .right {
         flex-shrink: 0;
-        height: 100%;
+        height: 350px;
         width: 100%;
         max-height: 350px;
       }
@@ -243,6 +249,7 @@ import { API_ENDPOINTS } from './config/api.config';
     .form {
       margin: 40px;
       position: absolute;
+      width: calc(100% - 80px);
     }
 
     label {

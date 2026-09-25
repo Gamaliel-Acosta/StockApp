@@ -35,3 +35,26 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import "@ionic/angular/css/palettes/dark.system.css";
+
+html,
+body,
+ion-app {
+	overflow-x: hidden;
+}
+
+.authenticated-content > ion-router-outlet {
+	display: block;
+	position: relative;
+	width: 100%;
+	height: 100%;
+}
+
+.authenticated-content ion-content {
+	--padding-top: 80px;
+}
+
+@media (max-width: 760px) {
+	.authenticated-content ion-content {
+		--padding-top: 116px;
+	}
+}
