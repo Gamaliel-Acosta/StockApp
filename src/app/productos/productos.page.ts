@@ -5,8 +5,10 @@ import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import axios from 'axios';
 import { ActivatedRoute } from '@angular/router';
+import { skip } from 'rxjs';
 import { API_ENDPOINTS } from '../config/api.config';
 import { DatabaseService, Product } from '../services/database.service';
+import { ConnectivityService } from '../services/connectivity.service';
 
 interface ProductsResponse {
   success: boolean;
@@ -53,11 +55,13 @@ export class ProductosPage implements OnInit {
   products: Product[] = [];
   loading = false;
   errorMessage = '';
+  infoMessage = '';
 
   constructor(
     private readonly changeDetector: ChangeDetectorRef,
     private readonly database: DatabaseService,
     private readonly route: ActivatedRoute,
+    private readonly connectivity: ConnectivityService,
   ) {
     addIcons({
       addOutline,
@@ -99,7 +103,10 @@ export class ProductosPage implements OnInit {
       await axios.delete(`${API_ENDPOINTS.productos}/${product.id}`, { timeout: 10000 });
       await this.database.deleteProduct(product.id);
       this.products = this.products.filter((item) => item.id !== product.id);
-    } catch {
+    } catch (error: unknown) {
+      if (this.connectivity.isConnectionError(error)) {
+        this.connectivity.markOffline();
+      }
       this.errorMessage = 'No se pudo eliminar el producto.';
     }
   }
@@ -107,6 +114,7 @@ export class ProductosPage implements OnInit {
   openAddForm(): void {
     this.newProduct = this.createEmptyProduct();
     this.errorMessage = '';
+    this.infoMessage = '';
     this.showAddForm = true;
   }
 
@@ -127,7 +135,14 @@ export class ProductosPage implements OnInit {
 
     this.saving = true;
     this.errorMessage = '';
+    this.infoMessage = '';
     try {
+      await this.database.init();
+      if (this.connectivity.isOffline) {
+        await this.saveProductOffline({ name, code, price, available });
+        return;
+      }
+
       const response = await axios.post<Product>(API_ENDPOINTS.productos, {
         name,
         code,
@@ -140,15 +155,21 @@ export class ProductosPage implements OnInit {
         price: Number(response.data.price),
         available: Number(response.data.available),
       };
+      this.connectivity.markOnline();
 
       this.products = [...this.products, product].sort((first, second) => first.name.localeCompare(second.name));
       if (this.database.isAvailable) await this.database.saveProducts(this.products);
       this.showAddForm = false;
       this.newProduct = this.createEmptyProduct();
     } catch (error: unknown) {
-      this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
-        ? String(error.response.data.error)
-        : 'No se pudo agregar el producto.';
+      if (this.connectivity.isConnectionError(error)) {
+        this.connectivity.markOffline();
+        await this.saveProductOffline({ name, code, price, available });
+      } else {
+        this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
+          ? String(error.response.data.error)
+          : 'No se pudo agregar el producto.';
+      }
     } finally {
       this.saving = false;
       this.changeDetector.detectChanges();
@@ -156,6 +177,9 @@ export class ProductosPage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    this.connectivity.offlineMode$.pipe(skip(1)).subscribe((isOffline) => {
+      if (!isOffline && !this.loading) void this.loadProducts();
+    });
     await this.loadProducts();
     if (this.route.snapshot.queryParamMap.get('add') === '1') this.openAddForm();
   }
@@ -168,6 +192,13 @@ export class ProductosPage implements OnInit {
       await this.database.init();
       if (this.database.isAvailable) {
         this.products = await this.database.getProducts();
+      }
+
+      if (this.connectivity.isOffline) {
+        if (this.products.length === 0) {
+          this.errorMessage = 'No hay productos guardados en SQLite para mostrar offline.';
+        }
+        return;
       }
 
       const response = await axios.get<ProductsResponse>(API_ENDPOINTS.productos, {
@@ -184,12 +215,16 @@ export class ProductosPage implements OnInit {
         price: Number(product.price),
         available: Number(product.available),
       }));
+      this.connectivity.markOnline();
 
       if (this.database.isAvailable) {
         await this.database.saveProducts(products);
       }
       this.products = products;
     } catch (error: unknown) {
+      if (this.connectivity.isConnectionError(error)) {
+        this.connectivity.markOffline();
+      }
       if (this.products.length === 0) {
         this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
           ? String(error.response.data.error)
@@ -203,6 +238,23 @@ export class ProductosPage implements OnInit {
 
   private createEmptyProduct(): NewProduct {
     return { name: '', code: '', price: null, available: 0 };
+  }
+
+  private async saveProductOffline(productData: Omit<Product, 'id'>): Promise<void> {
+    if (!this.database.isAvailable) {
+      this.errorMessage = 'No se pudo inicializar SQLite para guardar el producto offline.';
+      return;
+    }
+
+    const localProduct: Product = {
+      id: -Date.now(),
+      ...productData,
+    };
+    await this.database.savePendingProduct(localProduct);
+    this.products = [...this.products, localProduct].sort((first, second) => first.name.localeCompare(second.name));
+    this.infoMessage = 'Producto guardado en SQLite. Se sincronizará con la BD al recuperar la conexión.';
+    this.showAddForm = false;
+    this.newProduct = this.createEmptyProduct();
   }
 
 }

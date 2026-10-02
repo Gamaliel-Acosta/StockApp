@@ -14,6 +14,7 @@ import axios from 'axios';
 import { Router } from '@angular/router';
 import { API_ENDPOINTS } from '../config/api.config';
 import { DatabaseService, Movement, Product } from '../services/database.service';
+import { ConnectivityService } from '../services/connectivity.service';
 
 interface DashboardResponse {
   success: boolean;
@@ -76,6 +77,7 @@ export class DashboardPage implements OnInit {
     private readonly changeDetector: ChangeDetectorRef,
     private readonly router: Router,
     private readonly database: DatabaseService,
+    private readonly connectivity: ConnectivityService,
   ) {
   addIcons({
     addOutline,
@@ -153,6 +155,10 @@ export class DashboardPage implements OnInit {
     await this.loadDashboard();
   }
 
+  async ionViewWillEnter(): Promise<void> {
+    if (!this.loading) await this.loadDashboard();
+  }
+
   async loadDashboard(): Promise<void> {
   this.loading = true;
   this.errorMessage = '';
@@ -184,6 +190,7 @@ export class DashboardPage implements OnInit {
     }
 
     const dashboard = response.data.data;
+    this.connectivity.markOnline();
 
     this.totalProducts = dashboard.totalProducts;
     this.lowStock = dashboard.lowStock;
@@ -218,6 +225,10 @@ export class DashboardPage implements OnInit {
     }
   } catch (error: unknown) {
     console.error('Error al cargar dashboard:', error);
+
+    if (this.connectivity.isConnectionError(error)) {
+      this.connectivity.markOffline();
+    }
 
     if (this.movements.length === 0) {
       this.errorMessage =

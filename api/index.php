@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-require_once __DIR__ . '/database.php';
+require_once __DIR__ . '/conexion.php';
 require_once __DIR__ . '/productos.php';
 require_once __DIR__ . '/movimientos.php';
 require_once __DIR__ . '/dashboard.php';
@@ -30,5 +30,5 @@ try {
         default => respond(['error' => 'Ruta no encontrada'], 404),
     };
 } catch (PDOException $error) {
-    respond(['error' => 'Error de base de datos', 'message' => $error->getMessage()], 500);
+    respond(['error' => 'No fue posible conectarse o consultar la base de datos'], 500);
 }

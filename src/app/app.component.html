@@ -1,4 +1,9 @@
-<ion-app>
+<ion-app [class.offline-active]="offlineMode$ | async">
+  <div class="connection-banner" *ngIf="offlineMode$ | async" role="status">
+    <ion-icon name="cloud-offline-outline"></ion-icon>
+    <span>Modo offline activo: estás viendo y utilizando los datos guardados en SQLite.</span>
+  </div>
+
   <aside class="sidebar" *ngIf="isAuthenticatedRoute">
       <div class="brand">
         <span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span>
@@ -16,7 +21,13 @@
   <header class="topbar" *ngIf="isAuthenticatedRoute">
         <div class="mobile-brand"><span class="brand-mark"><ion-icon name="cube-outline"></ion-icon></span><strong>Stock<span class="brand-accent">App</span></strong></div>
         <div class="search-wrap"><ion-icon name="search-outline"></ion-icon><ion-searchbar [(ngModel)]="searchTerm" placeholder="Buscar en todo el sistema..." [debounce]="0"></ion-searchbar></div>
-        <div class="user-area"><button class="icon-button" type="button" aria-label="Notificaciones"><ion-icon name="notifications-outline"></ion-icon><span class="notification-dot"></span></button><div class="user-profile"><ion-icon name="person-circle-outline"></ion-icon><span>Hola, Usuario</span><ion-icon class="user-chevron" name="chevron-down-outline"></ion-icon></div></div>
+        <div class="user-area"><button class="icon-button" type="button" aria-label="Notificaciones"><ion-icon name="notifications-outline"></ion-icon><span class="notification-dot"></span></button><div class="user-profile"><ion-icon name="person-circle-outline"></ion-icon><span>Hola, Usuario</span><ion-icon class="user-chevron" name="chevron-down-outline"></ion-icon></div><button class="menu-button" type="button" aria-label="Abrir selector de pantallas" [attr.aria-expanded]="isNavigationMenuOpen" (click)="toggleNavigationMenu()"><ion-icon name="list-outline"></ion-icon></button></div>
+        <nav class="screen-menu" *ngIf="isNavigationMenuOpen" aria-label="Selector de pantallas">
+          <a routerLink="/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }" (click)="closeNavigationMenu()"><ion-icon name="home-outline"></ion-icon><span>Inicio</span></a>
+          <a routerLink="/productos" routerLinkActive="active" (click)="closeNavigationMenu()"><ion-icon name="cube-outline"></ion-icon><span>Productos</span></a>
+          <a routerLink="/tabs/tab2" routerLinkActive="active" (click)="closeNavigationMenu()"><ion-icon name="swap-horizontal-outline"></ion-icon><span>Movimientos</span></a>
+          <a routerLink="/tabs/tab3" routerLinkActive="active" (click)="closeNavigationMenu()"><ion-icon name="person-circle-outline"></ion-icon><span>Perfil</span></a>
+        </nav>
   </header>
 
   <main class="route-content" [class.authenticated-content]="isAuthenticatedRoute">

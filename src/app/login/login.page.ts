@@ -12,7 +12,7 @@ import {
 } from '@ionic/angular';
 import { Router } from '@angular/router';
 import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api.config';
+import { getApiHost, getLoginEndpoint, normalizeApiHost, saveApiHost } from '../config/api.config';
 
 interface LoginResponse {
   success: boolean;
@@ -44,10 +44,9 @@ type RouteTarget = 'email' | 'password' | 'button';
   ],
 })
 export class LoginPage {
-  private readonly API_URL = API_ENDPOINTS.login;
-
   email = '';
   password = '';
+  apiHost = getApiHost();
   loading = false;
   errorMessage = '';
   private routeAnimation?: Animation;
@@ -99,8 +98,16 @@ export class LoginPage {
     const email = this.email.trim();
     const password = this.password;
 
-    if (!email || !password) {
+    if (!email || !password || !this.apiHost.trim()) {
       this.errorMessage = 'Ingresa tu correo y contraseña.';
+      return;
+    }
+
+    try {
+      this.apiHost = normalizeApiHost(this.apiHost);
+      saveApiHost(this.apiHost);
+    } catch (error) {
+      this.errorMessage = error instanceof Error ? error.message : 'Usa el formato 192.168.1.6:8080.';
       return;
     }
 
@@ -108,7 +115,7 @@ export class LoginPage {
 
     try {
       const response = await axios.post<LoginResponse>(
-        this.API_URL,
+        getLoginEndpoint(this.apiHost),
         { email, password },
         {
           headers: {
@@ -149,7 +156,7 @@ export class LoginPage {
             `Error del API (${error.response.status}).`;
         } else {
           this.errorMessage =
-            'No se pudo conectar con el API. Verifica que myfirstapp.test:8080 responda y que CORS esté habilitado.';
+            `No se pudo conectar con el API. Verifica que ${this.apiHost} responda y que CORS esté habilitado.`;
         }
       } else {
         this.errorMessage = 'Ocurrió un error inesperado al iniciar sesión.';

@@ -11,7 +11,23 @@ import {
 } from '@ionic/angular';
 import { animate, JSAnimation } from 'animejs';
 import axios from 'axios';
-import { API_ENDPOINTS } from './config/api.config';
+import {
+  getApiHost,
+  getLoginEndpoint,
+  normalizeApiHost,
+  saveApiHost,
+} from './config/api.config';
+
+interface LoginResponse {
+  success: boolean;
+  message: string;
+  user?: {
+    id: number;
+    name: string;
+    email: string;
+    role: string;
+  };
+}
 
 @Component({
   selector: 'app-login-pipe',
@@ -108,6 +124,22 @@ import { API_ENDPOINTS } from './config/api.config';
                 placeholder="••••••••"
                 required
                 autocomplete="current-password"
+              />
+
+              <label for="api-host">
+                IP del API
+              </label>
+
+              <input
+                type="text"
+                id="api-host"
+                name="apiHost"
+                [(ngModel)]="apiHost"
+                (focus)="onSubmitFocus()"
+                placeholder="192.168.1.6:8080"
+                inputmode="url"
+                required
+                autocomplete="url"
               />
 
               <input
@@ -219,7 +251,7 @@ import { API_ENDPOINTS } from './config/api.config';
     .right {
       background: #474A59;
       box-shadow: 0px 0px 40px 16px rgba(0, 0, 0, 0.22);
-      height: 320px;
+      height: 400px;
       color: #F1F1F2;
       position: relative;
       width: 50%;
@@ -228,9 +260,9 @@ import { API_ENDPOINTS } from './config/api.config';
     @media (max-width: 767px) {
       .right {
         flex-shrink: 0;
-        height: 350px;
+        height: 430px;
         width: 100%;
-        max-height: 350px;
+        max-height: 430px;
       }
     }
 
@@ -301,10 +333,12 @@ export class LoginPipe implements OnInit {
 
   email: string = '';
   password: string = '';
+  apiHost = getApiHost();
   isLoading: boolean = false;
 
-  // URL de la API
-  readonly apiUrl = API_ENDPOINTS.login;
+  get apiUrl(): string {
+    return getLoginEndpoint(this.apiHost);
+  }
 
   private router = inject(Router);
   private alertController = inject(AlertController);
@@ -396,10 +430,7 @@ export class LoginPipe implements OnInit {
   async login() {
 
     // Validar campos
-    if (
-      !this.email.trim() ||
-      !this.password.trim()
-    ) {
+    if (!this.email.trim() || !this.password.trim() || !this.apiHost.trim()) {
 
       const alert =
         await this.alertController.create({
@@ -413,6 +444,19 @@ export class LoginPipe implements OnInit {
 
       await alert.present();
 
+      return;
+    }
+
+    try {
+      this.apiHost = normalizeApiHost(this.apiHost);
+      saveApiHost(this.apiHost);
+    } catch (error) {
+      const alert = await this.alertController.create({
+        header: 'IP del API no válida',
+        message: error instanceof Error ? error.message : 'Usa el formato 192.168.1.6:8080.',
+        buttons: ['OK'],
+      });
+      await alert.present();
       return;
     }
 
@@ -430,7 +474,7 @@ export class LoginPipe implements OnInit {
     try {
 
       // Consumir API
-      const response = await axios.post(
+      const response = await axios.post<LoginResponse>(
         this.apiUrl,
         {
           email: this.email,
@@ -440,29 +484,24 @@ export class LoginPipe implements OnInit {
           headers: {
             'Content-Type': 'application/json',
           },
-
           timeout: 10000,
-        }
+        },
       );
+
+      const responseData = response.data;
 
       await loading.dismiss();
 
       this.isLoading = false;
 
       // Login exitoso
-      if (
-        response.data &&
-        (
-          response.data.status === 'success' ||
-          response.status === 200
-        )
-      ) {
+      if (responseData.success) {
 
         // Mostrar mensaje de éxito
         const toast =
           await this.toastController.create({
             message:
-              response.data.message ||
+              responseData.message ||
               '¡Inicio de sesión exitoso!',
 
             duration: 2000,
@@ -473,12 +512,12 @@ export class LoginPipe implements OnInit {
         await toast.present();
 
         // Guardar información del usuario
-        if (response.data.user) {
+        if (responseData.user) {
 
           localStorage.setItem(
             'currentUser',
             JSON.stringify(
-              response.data.user
+              responseData.user
             )
           );
         }
@@ -498,7 +537,7 @@ export class LoginPipe implements OnInit {
             header: 'Error de autenticación',
 
             message:
-              response.data?.message ||
+              responseData?.message ||
               'Credenciales incorrectas',
 
             buttons: ['Reintentar'],
@@ -507,7 +546,7 @@ export class LoginPipe implements OnInit {
         await alert.present();
       }
 
-    } catch (error: any) {
+    } catch (error: unknown) {
 
       await loading.dismiss();
 
@@ -517,13 +556,16 @@ export class LoginPipe implements OnInit {
         'No se pudo conectar con la API en ' +
         this.apiUrl;
 
-      if (error.response?.data?.message) {
-
-        msg =
-          error.response.data.message;
-
-      } else if (error.message) {
-
+      if (axios.isAxiosError<{ message?: string }>(error)) {
+        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+          msg = 'El API tardó demasiado en responder.';
+        } else if (error.response?.data?.message) {
+          msg = error.response.data.message;
+        } else if (!error.response) {
+          msg =
+            'No se pudo conectar con el API. Verifica que el servidor esté activo y que CORS esté habilitado.';
+        }
+      } else if (error instanceof Error) {
         msg = error.message;
       }
 

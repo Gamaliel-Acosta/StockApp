@@ -37,6 +37,7 @@ export class DatabaseService {
   private readonly sqlite = new SQLiteConnection(CapacitorSQLite);
   private database?: SQLiteDBConnection;
   private initialized = false;
+  private initPromise?: Promise<boolean>;
 
   get isAvailable(): boolean {
     return this.initialized && !!this.database;
@@ -44,11 +45,17 @@ export class DatabaseService {
 
   async init(): Promise<boolean> {
     if (this.isAvailable) return true;
+    if (this.initPromise) return this.initPromise;
 
     if (!Capacitor.isNativePlatform()) {
       return false;
     }
 
+    this.initPromise = this.initializeDatabase();
+    return this.initPromise;
+  }
+
+  private async initializeDatabase(): Promise<boolean> {
     try {
       this.database = await this.sqlite.createConnection(
         'inventory',
@@ -84,6 +91,14 @@ export class DatabaseService {
           date TEXT NOT NULL,
           icon TEXT NOT NULL
         );
+
+        CREATE TABLE IF NOT EXISTS pending_products (
+          id INTEGER PRIMARY KEY,
+          name TEXT NOT NULL,
+          code TEXT NOT NULL,
+          price REAL NOT NULL,
+          available INTEGER NOT NULL
+        );
       `);
 
       this.initialized = true;
@@ -92,6 +107,8 @@ export class DatabaseService {
       console.error('No se pudo inicializar SQLite:', error);
       this.database = undefined;
       return false;
+    } finally {
+      this.initPromise = undefined;
     }
   }
 
@@ -141,6 +158,57 @@ export class DatabaseService {
   async deleteProduct(id: number): Promise<void> {
     if (!this.database) return;
     await this.database.run('DELETE FROM products WHERE id = ?;', [id]);
+  }
+
+  async savePendingProduct(product: Product): Promise<void> {
+    if (!this.database) return;
+
+    await this.database.run(
+      `
+        INSERT OR REPLACE INTO pending_products (id, name, code, price, available)
+        VALUES (?, ?, ?, ?, ?);
+      `,
+      [product.id, product.name, product.code, product.price, product.available],
+    );
+    await this.database.run(
+      `
+        INSERT OR REPLACE INTO products (id, name, code, price, available)
+        VALUES (?, ?, ?, ?, ?);
+      `,
+      [product.id, product.name, product.code, product.price, product.available],
+    );
+  }
+
+  async getPendingProducts(): Promise<Product[]> {
+    if (!this.database) return [];
+
+    const result = await this.database.query(`
+      SELECT id, name, code, price, available
+      FROM pending_products
+      ORDER BY id;
+    `);
+    return (result.values ?? []) as Product[];
+  }
+
+  async replacePendingProduct(localId: number, product: Product): Promise<void> {
+    if (!this.database) return;
+
+    await this.database.execute('BEGIN TRANSACTION;');
+    try {
+      await this.database.run('DELETE FROM pending_products WHERE id = ?;', [localId]);
+      await this.database.run('DELETE FROM products WHERE id = ?;', [localId]);
+      await this.database.run(
+        `
+          INSERT OR REPLACE INTO products (id, name, code, price, available)
+          VALUES (?, ?, ?, ?, ?);
+        `,
+        [product.id, product.name, product.code, product.price, product.available],
+      );
+      await this.database.execute('COMMIT;');
+    } catch (error) {
+      await this.database.execute('ROLLBACK;');
+      throw error;
+    }
   }
 
   async getDashboard(): Promise<DashboardSnapshot | null> {
