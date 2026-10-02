@@ -1,21 +1,16 @@
-# 📸 Photo Gallery NG Capacitor
+# Photo Gallery NG Capacitor
 
-Una aplicación móvil multiplataforma desarrollada con **Ionic Framework**, **Angular 22**, y **Capacitor** para gestionar galerías de fotos con funcionalidades nativas de dispositivo, autenticación de usuarios y más.
+Aplicación móvil multiplataforma desarrollada con **Ionic Framework**, **Angular 22** y **Capacitor**. Incluye autenticación, galería de fotos, dashboard y gestión de productos mediante una API PHP/MySQL.
 
 Potenciada por [Ionic Angular](https://ionicframework.com/docs/angular/overview) (aplicación web) y [Capacitor](https://capacitor.ionicframework.com) (runtime de aplicación nativa).
 
-## ✨ Características Principales
+## Características principales
 
-- ✅ **Sistema de Autenticación**: Login seguro con protección de rutas
-- 📸 **Galería de Fotos**: Captura, almacenamiento y gestión de imágenes
-- 📱 **Multiplataforma**: Ejecutable en iOS, Android y Web
-- 🎨 **Interfaz Responsiva**: Componentes Ionic modernos y adaptables
-- 🔐 **Guards de Autenticación**: Protección de rutas privadas
-- 📊 **Dashboard**: Panel de control con información principal
-- 🛍️ **Gestión de Productos**: Módulo para visualizar productos
-- ⚡ **PWA Ready**: Soporte para Progressive Web App
-- 🎭 **Navegación por Tabs**: Interfaz intuitiva con pestañas
-- 💾 **Persistencia de Datos**: Almacenamiento en filesystem y preferencias
+- **Autenticación** con guard para proteger la navegación principal.
+- **Galería de fotos** con cámara, filesystem y preferencias del dispositivo.
+- **Dashboard** y **gestión de productos** conectados al backend.
+- **Navegación por tabs** con componentes Ionic responsivos.
+- Ejecución en **Web, Android e iOS** mediante Capacitor.
 
 ## 🔧 Requisitos Previos
 
@@ -23,8 +18,10 @@ Potenciada por [Ionic Angular](https://ionicframework.com/docs/angular/overview)
 |-----------|---------|
 | **Node.js** | `^22.22.3 \|\| ^24.15.0 \|\| >=26.0.0` |
 | **npm** | Latest |
-| **Ionic CLI** | Global |
-| **Capacitor CLI** | 8.5.0 |
+| **Ionic CLI** | Recomendado para comandos Ionic |
+| **Capacitor CLI** | `^8.5.0` |
+| **PHP** | 8.x o compatible |
+| **MySQL/MariaDB** | Para la API y el inventario |
 | **Xcode** | Última versión (iOS) |
 | **Android Studio** | Última versión (Android) |
 
@@ -37,13 +34,15 @@ cd MyFirstAPP
 npm install
 ```
 
+La aplicación espera la API PHP disponible en `http://myfirstapp.test:8080`. Ajusta `proxy.conf.json` si tu servidor local utiliza otro host o puerto.
+
 ### 2. Instalar plataformas móviles (opcional)
 ```bash
-# iOS
-npx cap add ios
+# iOS (la plataforma ya está incluida en este repositorio)
+npx cap sync ios
 
-# Android
-npx cap add android
+# Android (la plataforma ya está incluida en este repositorio)
+npx cap sync android
 ```
 
 ### 3. Ejecutar en desarrollo
@@ -67,7 +66,7 @@ npm test               # Ejecuta pruebas unitarias
 npm run lint           # Validación de código
 
 # Capacitor (Nativo)
-npx cap sync           # Sincroniza con plataformas nativas
+npx cap sync           # Sincroniza www/ con las plataformas nativas
 npx cap open ios       # Abre en Xcode
 npx cap open android   # Abre en Android Studio
 ```
@@ -97,10 +96,11 @@ MyFirstAPP/
 │   ├── global.scss                # Estilos globales
 │   ├── index.html                 # HTML principal
 │   └── main.ts                    # Punto de entrada
-├── android/                       # Código nativo Android
-├── ios/                          # Código nativo iOS
-├── www/                          # Build compilado (generado)
-└── ionic.config.json             # Configuración Ionic
+├── android/                       # Proyecto nativo Android
+├── ios/                           # Proyecto nativo iOS
+├── api/                           # API PHP y scripts SQL
+├── www/                           # Build compilado (generado)
+└── ionic.config.json              # Configuración Ionic
 ```
 
 ## 🔐 Sistema de Autenticación
@@ -123,6 +123,7 @@ El proyecto implementa un sistema de autenticación robusto:
 /dashboard     → Acceso público
 /productos     → Acceso público
 /login         → Acceso público
+/login-pipe    → Acceso público (alias del login)
 ```
 
 ## 📦 Stack Tecnológico
@@ -144,6 +145,7 @@ El proyecto implementa un sistema de autenticación robusto:
 |------|-----------|-----------|-------------|
 | `/` | Redirect | No | Redirecciona a login |
 | `/login` | LoginPipe | No | Página de inicio de sesión |
+| `/login-pipe` | LoginPipe | No | Alias de la página de inicio de sesión |
 | `/tabs` | Tabs Routes | **Sí** | Navegación principal |
 | `/dashboard` | DashboardPage | No | Panel de control |
 | `/productos` | ProductosPage | No | Gestión de productos |
@@ -209,16 +211,20 @@ npm start
 - **Android**: Chrome DevTools vía USB debugging
 - **IDEs**: Xcode y Android Studio tienen debuggers integrados
 
-### Proxy Configuration
+### Configuración del proxy
 ```javascript
-// proxy.conf.json - Configurado para desarrollo
+// proxy.conf.json - Configurado para desarrollo local
 {
   "/api": {
-    "target": "http://localhost:3000",
-    "changeOrigin": true
+    "target": "http://myfirstapp.test:8080",
+    "secure": false,
+    "changeOrigin": true,
+    "pathRewrite": { "^/api": "" }
   }
 }
 ```
+
+Las solicitudes realizadas desde Angular con `/api/...` se redirigen al backend PHP sin el prefijo `/api`.
 
 ## 📝 Convenciones de Código
 
@@ -294,5 +300,5 @@ Licensed under the MIT License - ver [LICENSE](./LICENSE) para más detalles.
 
 ---
 
-**Última actualización**: Septiembre 2026
+**Última actualización**: Octubre 2026
 **Versión**: 2.0.0
