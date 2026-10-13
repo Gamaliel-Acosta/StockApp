@@ -14,10 +14,11 @@ form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap:
 .card-title h2 { color: #eef3f9; font-size: 16px; font-weight: 700; white-space: nowrap; }
 .main-content { display: flex; align-items: center; min-height: 190px; padding: 12px 24px 12px 42px; gap: 24px; }
 .avatar-column { display: flex; align-items: center; flex: 0 0 150px; box-sizing: border-box; flex-direction: column; gap: 10px; padding-right: 22px; border-right: 1px solid rgba(105,148,190,.15); }
-.avatar-button { position: relative; display: grid; width: 112px; height: 112px; padding: 0; overflow: visible; border: 0; border-radius: 50%; background: #1f4267; color: #67aafc; cursor: pointer; flex: 0 0 auto; }
-.avatar-button img, .avatar-button > ion-icon { width: 100%; height: 100%; border-radius: 50%; }
-.avatar-button img { object-fit: cover; }
-.camera-badge { position: absolute; right: -6px; bottom: 0; display: grid; place-items: center; width: 30px; height: 30px; border: 3px solid #172635; border-radius: 50%; background: #4c91e7; color: #fff; }
+.avatar-button { position: relative; display: grid; place-items: center; width: 112px; height: 112px; padding: 0; overflow: hidden; border: 3px solid rgba(103, 170, 255, 0.75); border-radius: 50%; background: #1f4267; color: #67aafc; cursor: pointer; flex: 0 0 auto; box-shadow: 0 10px 24px rgba(0,0,0,.18); }
+.avatar-button img, .avatar-button > ion-icon { display: block; width: 100%; height: 100%; border-radius: 50%; }
+.avatar-button img { object-fit: cover; object-position: center; }
+.avatar-button > ion-icon { font-size: 60px; }
+.camera-badge { position: absolute; right: -6px; bottom: 0; display: grid; place-items: center; width: 30px; height: 30px; border: 3px solid #172635; border-radius: 50%; background: #4c91e7; color: #fff; z-index: 1; }
 .camera-badge ion-icon { font-size: 14px; }
 .photo-link { display: flex; align-items: center; gap: 6px; padding: 7px 13px; border: 1px solid #3d91ec; border-radius: 6px; background: transparent; color: #53a4ff; font-size: 12px; font-weight: 700; cursor: pointer; }
 .identity { min-width: 0; flex: 1 1 auto; }

@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import {
@@ -62,7 +62,10 @@ export class PerfilPage implements OnInit {
   saving = false;
   editing = false;
 
-  constructor(private readonly actionSheetController: ActionSheetController) {
+  constructor(
+    private readonly actionSheetController: ActionSheetController,
+    private readonly changeDetector: ChangeDetectorRef,
+  ) {
     addIcons({
       call,
       camera,
@@ -82,6 +85,7 @@ export class PerfilPage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
+    await this.loadProfilePhoto();
     const currentUser = this.readCurrentUser();
     this.userId = currentUser.id ?? '';
     this.applyUser(currentUser);
@@ -104,8 +108,11 @@ export class PerfilPage implements OnInit {
       this.errorMessage = 'No se encontró el usuario actual.';
     }
 
-    const { value: savedPhoto } = await Preferences.get({ key: 'profilePhoto' });
-    this.profilePhoto = savedPhoto || '';
+    await this.loadProfilePhoto();
+  }
+
+  ionViewWillEnter(): void {
+    void this.loadProfilePhoto();
   }
 
   async changeProfilePhoto(): Promise<void> {
@@ -151,6 +158,7 @@ export class PerfilPage implements OnInit {
       this.errorMessage = this.apiErrorMessage(error, 'No se pudo guardar la información del usuario.');
     } finally {
       this.saving = false;
+      this.changeDetector.detectChanges();
     }
   }
 
@@ -179,12 +187,53 @@ export class PerfilPage implements OnInit {
     try {
       const photo = await Camera.getPhoto({ quality: 90, resultType: CameraResultType.DataUrl, source });
       if (!photo.dataUrl) throw new Error('La imagen seleccionada no está disponible.');
-      this.profilePhoto = photo.dataUrl;
-      await Preferences.set({ key: 'profilePhoto', value: photo.dataUrl });
+      const optimizedPhoto = await this.optimizePhoto(photo.dataUrl);
+      this.profilePhoto = optimizedPhoto;
+      localStorage.setItem('profilePhoto', optimizedPhoto);
+      this.changeDetector.detectChanges();
     } catch (error: unknown) {
       if (error instanceof Error && /cancel/i.test(error.message)) return;
       this.errorMessage = 'No se pudo actualizar la foto de perfil.';
+      this.changeDetector.detectChanges();
     }
+  }
+
+  private async loadProfilePhoto(): Promise<void> {
+    const localPhoto = localStorage.getItem('profilePhoto');
+    if (localPhoto) {
+      this.profilePhoto = localPhoto;
+      this.changeDetector.detectChanges();
+      return;
+    }
+
+    const { value: legacyPhoto } = await Preferences.get({ key: 'profilePhoto' });
+    if (legacyPhoto) {
+      localStorage.setItem('profilePhoto', legacyPhoto);
+      this.profilePhoto = legacyPhoto;
+      this.changeDetector.detectChanges();
+    }
+  }
+
+  private optimizePhoto(dataUrl: string): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => {
+        const maxSize = 512;
+        const scale = Math.min(1, maxSize / Math.max(image.naturalWidth, image.naturalHeight));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        const context = canvas.getContext('2d');
+        if (!context) {
+          reject(new Error('No se pudo preparar la imagen.'));
+          return;
+        }
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.82));
+      };
+      image.onerror = () => reject(new Error('No se pudo leer la imagen seleccionada.'));
+      image.src = dataUrl;
+    });
   }
 
   private readCurrentUser(): UserProfile {
