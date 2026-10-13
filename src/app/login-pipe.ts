@@ -10,24 +10,13 @@ import {
   ToastController
 } from '@ionic/angular';
 import { animate, JSAnimation } from 'animejs';
-import axios from 'axios';
+import { CapacitorHttp } from '@capacitor/core';
 import {
   getApiHost,
   getLoginEndpoint,
   normalizeApiHost,
   saveApiHost,
 } from './config/api.config';
-
-interface LoginResponse {
-  success: boolean;
-  message: string;
-  user?: {
-    id: number;
-    name: string;
-    email: string;
-    role: string;
-  };
-}
 
 @Component({
   selector: 'app-login-pipe',
@@ -474,19 +463,18 @@ export class LoginPipe implements OnInit {
     try {
 
       // Consumir API
-      const response = await axios.post<LoginResponse>(
-        this.apiUrl,
-        {
+      const response = await CapacitorHttp.post({
+        url: this.apiUrl,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        data: {
           email: this.email,
           password: this.password,
         },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          timeout: 10000,
-        },
-      );
+        connectTimeout: 10000,
+        readTimeout: 10000,
+      });
 
       const responseData = response.data;
 
@@ -495,7 +483,14 @@ export class LoginPipe implements OnInit {
       this.isLoading = false;
 
       // Login exitoso
-      if (responseData.success) {
+      if (
+        responseData &&
+        (
+          responseData.success === true ||
+            responseData.status === 'success' ||
+            response.status === 200
+        )
+      ) {
 
         // Mostrar mensaje de éxito
         const toast =
@@ -546,7 +541,7 @@ export class LoginPipe implements OnInit {
         await alert.present();
       }
 
-    } catch (error: unknown) {
+    } catch (error: any) {
 
       await loading.dismiss();
 
@@ -556,16 +551,15 @@ export class LoginPipe implements OnInit {
         'No se pudo conectar con la API en ' +
         this.apiUrl;
 
-      if (axios.isAxiosError<{ message?: string }>(error)) {
-        if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
-          msg = 'El API tardó demasiado en responder.';
-        } else if (error.response?.data?.message) {
-          msg = error.response.data.message;
-        } else if (!error.response) {
-          msg =
-            'No se pudo conectar con el API. Verifica que el servidor esté activo y que CORS esté habilitado.';
-        }
-      } else if (error instanceof Error) {
+      if (error.name === 'AbortError') {
+        msg = 'El API tardó demasiado en responder.';
+      } else if (error.response?.data?.message) {
+
+        msg =
+          error.response.data.message;
+
+      } else if (error.message) {
+
         msg = error.message;
       }
 

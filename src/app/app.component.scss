@@ -10,9 +10,9 @@
 .nav-item ion-icon { font-size: 21px; }
 .nav-item:hover, .nav-item.active { color: #f1f6fc; background: #2b3848; }
 .nav-item.active::before { position: absolute; left: -16px; width: 3px; height: 28px; border-radius: 0 3px 3px 0; background: #55a4ff; content: ''; }
-.route-content { position: relative; min-width: 0; width: 100%; height: 100%; overflow-x: hidden; box-sizing: border-box; }
+.route-content { position: relative; min-width: 0; width: 100%; height: 100%; overflow-x: hidden; overflow-y: auto; box-sizing: border-box; }
 .route-content.authenticated-content { width: calc(100% - 246px); margin-left: 246px; }
-.authenticated-content { padding-top: 80px; box-sizing: border-box; }
+.authenticated-content { height: 100vh; min-height: 100vh; padding-top: 80px; box-sizing: border-box; }
 .topbar { position: fixed; z-index: 999; top: 0; right: 0; left: 246px; display: flex; align-items: center; gap: 28px; min-height: 80px; padding: 0 34px; box-sizing: border-box; border-bottom: 1px solid rgba(157, 175, 195, .14); background: #17222e; }
 .mobile-brand { display: none; align-items: center; gap: 10px; color: #f4f7fb; font-size: 20px; font-weight: 700; }
 .mobile-brand .brand-mark { width: 32px; height: 32px; }.mobile-brand .brand-mark ion-icon { font-size: 20px; }

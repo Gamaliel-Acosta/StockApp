@@ -39,4 +39,7 @@ export const API_ENDPOINTS = {
   get movimientos() {
     return `http://${getApiHost()}/api/movimientos`;
   },
+  get perfil() {
+    return `http://${getApiHost()}/api/perfil.php`;
+  },
 } as const;

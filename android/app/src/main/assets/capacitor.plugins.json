@@ -1,5 +1,9 @@
 [
 	{
+		"pkg": "@capacitor-community/bluetooth-le",
+		"classpath": "com.capacitorjs.community.plugins.bluetoothle.BluetoothLe"
+	},
+	{
 		"pkg": "@capacitor-community/sqlite",
 		"classpath": "com.getcapacitor.community.database.sqlite.CapacitorSQLitePlugin"
 	},

@@ -31,6 +31,11 @@ export const routes: Routes = [
       import('./productos/productos.page').then((m) => m.ProductosPage),
   },
   {
+    path: 'perfil',
+    loadComponent: () => import('./perfil/perfil.page').then((m) => m.PerfilPage),
+    canActivate: [authGuard],
+  },
+  {
     path: '**',
     redirectTo: 'login',
     pathMatch: 'full',

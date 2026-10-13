@@ -3,7 +3,13 @@
 	"appName": "Photo Gallery Cap Ng",
 	"npmClient": "npm",
 	"webDir": "www",
+	"plugins": {
+		"CapacitorHttp": {
+			"enabled": true
+		}
+	},
 	"packageClassList": [
+		"BluetoothLe",
 		"CapacitorSQLitePlugin",
 		"AppPlugin",
 		"CAPCameraPlugin",

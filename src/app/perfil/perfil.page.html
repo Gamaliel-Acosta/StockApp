@@ -1,0 +1,73 @@
+<main class="profile-page">
+  <section class="profile-heading">
+    <div>
+      <p class="eyebrow">Mi cuenta</p>
+      <h1>Perfil</h1>
+    </div>
+    <ion-button *ngIf="!editing" class="edit-button" type="button" (click)="editProfile()">
+      <ion-icon slot="start" name="create"></ion-icon>
+      Editar perfil
+    </ion-button>
+  </section>
+
+  <form (ngSubmit)="saveProfile()" #profileForm="ngForm">
+    <section class="profile-card main-card" aria-labelledby="profile-title">
+      <div class="card-title">
+        <ion-icon name="person"></ion-icon>
+        <h2>Información principal</h2>
+      </div>
+      <div class="main-content">
+        <div class="avatar-column">
+          <button class="avatar-button" type="button" (click)="changeProfilePhoto()" aria-label="Cambiar foto de perfil">
+            <img *ngIf="profilePhoto; else defaultAvatar" [src]="profilePhoto" alt="Foto de perfil" />
+            <ng-template #defaultAvatar><ion-icon name="person-circle-outline" aria-hidden="true"></ion-icon></ng-template>
+            <span class="camera-badge"><ion-icon name="camera" aria-hidden="true"></ion-icon></span>
+          </button>
+          <button class="photo-link" type="button" (click)="changeProfilePhoto()">
+            <ion-icon name="camera"></ion-icon> Cambiar foto
+          </button>
+        </div>
+        <div class="identity">
+          <h3 id="profile-title">{{ name || 'No registrado' }}</h3>
+          <p class="role"><ion-icon name="shield-checkmark"></ion-icon>{{ role || 'No registrado' }}</p>
+          <p class="member-since">Miembro desde {{ formatDate(createdAt) }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="profile-card contact-card">
+      <div class="card-title"><ion-icon name="people"></ion-icon><h2>Información de contacto</h2></div>
+      <div class="info-list">
+        <div class="info-row"><ion-icon name="mail"></ion-icon><span>Correo electrónico</span><strong>{{ email || 'No registrado' }}</strong></div>
+        <div class="info-row"><ion-icon name="call"></ion-icon><span>Teléfono</span><strong>{{ phone || 'No registrado' }}</strong></div>
+      </div>
+    </section>
+
+    <section class="profile-card personal-card">
+      <div class="card-title"><ion-icon name="document-text"></ion-icon><h2>Información personal</h2></div>
+      <div class="info-list">
+        <div class="info-row"><ion-icon name="person"></ion-icon><span>Nombre completo</span><strong>{{ name || 'No registrado' }}</strong></div>
+        <div class="info-row"><ion-icon name="person"></ion-icon><span>Nombre de usuario</span><strong>{{ username || 'No registrado' }}</strong></div>
+      </div>
+    </section>
+
+    <section class="profile-card preferences-card">
+      <div class="card-title"><ion-icon name="settings"></ion-icon><h2>Preferencias de la cuenta</h2></div>
+      <div class="info-list">
+        <div class="info-row"><ion-icon name="notifications"></ion-icon><span>Notificaciones</span><strong>No registrado</strong></div>
+        <div class="info-row"><ion-icon name="lock-closed"></ion-icon><span>Último acceso</span><strong>{{ formatDate(lastLoginAt) }}</strong></div>
+      </div>
+    </section>
+
+    <div *ngIf="editing" class="edit-panel">
+      <ion-item lines="none" class="form-field"><ion-label position="stacked">Nombre completo</ion-label><ion-input name="name" [(ngModel)]="name" required></ion-input></ion-item>
+      <ion-item lines="none" class="form-field"><ion-label position="stacked">Nombre de usuario</ion-label><ion-input name="username" [(ngModel)]="username"></ion-input></ion-item>
+      <ion-item lines="none" class="form-field"><ion-label position="stacked">Correo electrónico</ion-label><ion-input name="email" [(ngModel)]="email" type="email" required></ion-input></ion-item>
+      <ion-item lines="none" class="form-field"><ion-label position="stacked">Teléfono</ion-label><ion-input name="phone" [(ngModel)]="phone" type="tel"></ion-input></ion-item>
+      <ion-item lines="none" class="form-field"><ion-label position="stacked">Rol</ion-label><ion-input name="role" [(ngModel)]="role" required></ion-input></ion-item>
+      <ion-text color="danger" *ngIf="errorMessage"><p class="form-message">{{ errorMessage }}</p></ion-text>
+      <ion-text color="success" *ngIf="savedMessage"><p class="form-message">{{ savedMessage }}</p></ion-text>
+      <ion-button class="save-button" type="submit" [disabled]="saving || profileForm.invalid"><ion-icon slot="start" name="save-outline"></ion-icon>{{ saving ? 'Guardando...' : 'Guardar cambios' }}</ion-button>
+    </div>
+  </form>
+</main>
