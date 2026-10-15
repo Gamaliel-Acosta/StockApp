@@ -55,11 +55,11 @@ flowchart LR
 | MySQL/MariaDB | Persistir usuarios, productos y movimientos. |
 | SQLite local | Mantener caché y productos pendientes cuando la aplicación nativa está sin conexión. |
 
-La separación evita que las páginas construyan SQL o conozcan detalles de conexión. También permite cambiar el backend sin modificar la interfaz de usuario.
+La separación evita que las páginas construyan SQL o conozcan detalles de conexión. El servicio Angular `src/app/services/inventory-api.service.ts` centraliza las solicitudes Axios, valida las respuestas y traduce los errores de la API. También permite cambiar el backend sin modificar la interfaz de usuario.
 
 ## 4. Endpoints requeridos
 
-La URL base depende del host configurado en `api.config.ts`. En desarrollo puede utilizarse, por ejemplo, `http://192.168.1.6:8080`.
+La URL base depende del host configurado en `api.config.ts`. Apache debe utilizar el puerto `8080`; en desarrollo puede utilizarse, por ejemplo, `http://192.168.1.6:8080`.
 
 ### 4.1 Autenticación
 

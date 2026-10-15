@@ -18,7 +18,7 @@
             <label>Disponible<input name="available" type="number" [(ngModel)]="newProduct.available" min="0" step="1" required /></label>
             <div class="form-actions">
               <button class="cancel-button" type="button" (click)="closeAddForm()">Cancelar</button>
-              <button class="save-button" type="submit" [disabled]="saving">{{ saving ? 'Guardando...' : 'Guardar producto' }}</button>
+              <button class="save-button" type="submit" [disabled]="saving">{{ saving ? 'Guardando...' : editingProductId === null ? 'Guardar producto' : 'Actualizar producto' }}</button>
             </div>
           </form>
           <div class="table-wrap">
@@ -32,7 +32,7 @@
               <span class="status-badge" [class.ok]="getStatus(product) === 'available'" [class.warning]="getStatus(product) === 'low'" [class.empty]="getStatus(product) === 'empty'">
                 <ion-icon [name]="getStatus(product) === 'available' ? 'alert-circle-outline' : getStatus(product) === 'low' ? 'warning-outline' : 'alert-circle-outline'"></ion-icon><span>{{ getStatus(product) === 'available' ? 'Disponible' : getStatus(product) === 'low' ? 'Stock bajo' : 'Agotado' }}</span>
               </span>
-              <div class="row-actions"><button aria-label="Editar producto"><ion-icon name="create-outline"></ion-icon></button><button aria-label="Eliminar producto" (click)="removeProduct(product)"><ion-icon name="trash-outline"></ion-icon></button></div>
+              <div class="row-actions"><button aria-label="Editar producto" (click)="editProduct(product)"><ion-icon name="create-outline"></ion-icon></button><button aria-label="Eliminar producto" (click)="removeProduct(product)"><ion-icon name="trash-outline"></ion-icon></button></div>
             </div>
             <p class="empty-state" *ngIf="loading">Cargando productos...</p>
             <p class="empty-state info-state" *ngIf="!loading && infoMessage">{{ infoMessage }}</p>

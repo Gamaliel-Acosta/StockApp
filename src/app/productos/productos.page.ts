@@ -3,18 +3,11 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { IonContent, IonIcon } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import axios from 'axios';
 import { ActivatedRoute } from '@angular/router';
 import { skip } from 'rxjs';
-import { API_ENDPOINTS } from '../config/api.config';
 import { DatabaseService, Product } from '../services/database.service';
 import { ConnectivityService } from '../services/connectivity.service';
-
-interface ProductsResponse {
-  success: boolean;
-  message: string;
-  data?: Product[];
-}
+import { InventoryApiService } from '../services/inventory-api.service';
 
 interface NewProduct {
   name: string;
@@ -49,6 +42,7 @@ import {
 export class ProductosPage implements OnInit {
   searchTerm = '';
   showAddForm = false;
+  editingProductId: number | null = null;
   saving = false;
   newProduct: NewProduct = this.createEmptyProduct();
 
@@ -62,6 +56,7 @@ export class ProductosPage implements OnInit {
     private readonly database: DatabaseService,
     private readonly route: ActivatedRoute,
     private readonly connectivity: ConnectivityService,
+    private readonly api: InventoryApiService,
   ) {
     addIcons({
       addOutline,
@@ -100,26 +95,43 @@ export class ProductosPage implements OnInit {
     if (!window.confirm(`¿Eliminar ${product.name}?`)) return;
     this.errorMessage = '';
     try {
-      await axios.delete(`${API_ENDPOINTS.productos}/${product.id}`, { timeout: 10000 });
+      await this.api.deleteProduct(product.id);
       await this.database.deleteProduct(product.id);
       this.products = this.products.filter((item) => item.id !== product.id);
     } catch (error: unknown) {
       if (this.connectivity.isConnectionError(error)) {
         this.connectivity.markOffline();
       }
-      this.errorMessage = 'No se pudo eliminar el producto.';
+      this.errorMessage = this.api.getErrorMessage(error, 'No se pudo eliminar el producto.');
     }
   }
 
   openAddForm(): void {
     this.newProduct = this.createEmptyProduct();
+    this.editingProductId = null;
     this.errorMessage = '';
     this.infoMessage = '';
     this.showAddForm = true;
   }
 
   closeAddForm(): void {
-    if (!this.saving) this.showAddForm = false;
+    if (!this.saving) {
+      this.showAddForm = false;
+      this.editingProductId = null;
+    }
+  }
+
+  editProduct(product: Product): void {
+    this.editingProductId = product.id;
+    this.newProduct = {
+      name: product.name,
+      code: product.code,
+      price: product.price,
+      available: product.available,
+    };
+    this.errorMessage = '';
+    this.infoMessage = '';
+    this.showAddForm = true;
   }
 
   async addProduct(): Promise<void> {
@@ -139,36 +151,38 @@ export class ProductosPage implements OnInit {
     try {
       await this.database.init();
       if (this.connectivity.isOffline) {
+        if (this.editingProductId !== null) {
+          this.errorMessage = 'No se puede editar un producto mientras estás offline.';
+          return;
+        }
         await this.saveProductOffline({ name, code, price, available });
         return;
       }
 
-      const response = await axios.post<Product>(API_ENDPOINTS.productos, {
-        name,
-        code,
-        price,
-        available,
-      }, { timeout: 10000 });
-      const product = {
-        ...response.data,
-        id: Number(response.data.id),
-        price: Number(response.data.price),
-        available: Number(response.data.available),
-      };
+      const payload = { name, code, price, available };
+      const product = this.editingProductId === null
+        ? await this.api.createProduct(payload)
+        : await this.api.updateProduct(this.editingProductId, payload);
       this.connectivity.markOnline();
 
-      this.products = [...this.products, product].sort((first, second) => first.name.localeCompare(second.name));
+      this.products = this.editingProductId === null
+        ? [...this.products, product]
+        : this.products.map((item) => item.id === product.id ? product : item);
+      this.products.sort((first, second) => first.name.localeCompare(second.name));
       if (this.database.isAvailable) await this.database.saveProducts(this.products);
       this.showAddForm = false;
+      this.editingProductId = null;
       this.newProduct = this.createEmptyProduct();
     } catch (error: unknown) {
       if (this.connectivity.isConnectionError(error)) {
         this.connectivity.markOffline();
-        await this.saveProductOffline({ name, code, price, available });
+        if (this.editingProductId === null) {
+          await this.saveProductOffline({ name, code, price, available });
+        } else {
+          this.errorMessage = 'No se puede editar un producto mientras estás offline.';
+        }
       } else {
-        this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
-          ? String(error.response.data.error)
-          : 'No se pudo agregar el producto.';
+        this.errorMessage = this.api.getErrorMessage(error, 'No se pudo agregar el producto.');
       }
     } finally {
       this.saving = false;
@@ -201,20 +215,7 @@ export class ProductosPage implements OnInit {
         return;
       }
 
-      const response = await axios.get<ProductsResponse>(API_ENDPOINTS.productos, {
-        timeout: 10000,
-      });
-
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'No se pudieron cargar los productos.');
-      }
-
-      const products = response.data.data.map((product) => ({
-        ...product,
-        id: Number(product.id),
-        price: Number(product.price),
-        available: Number(product.available),
-      }));
+      const products = await this.api.getProducts();
       this.connectivity.markOnline();
 
       if (this.database.isAvailable) {
@@ -226,9 +227,7 @@ export class ProductosPage implements OnInit {
         this.connectivity.markOffline();
       }
       if (this.products.length === 0) {
-        this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
-          ? String(error.response.data.error)
-          : 'No se pudieron cargar los productos desde la API.';
+        this.errorMessage = this.api.getErrorMessage(error, 'No se pudieron cargar los productos desde la API.');
       }
     } finally {
       this.loading = false;

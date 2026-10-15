@@ -10,24 +10,10 @@ import {
   IonIcon,
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
-import axios from 'axios';
 import { Router } from '@angular/router';
-import { API_ENDPOINTS } from '../config/api.config';
 import { DatabaseService, Movement, Product } from '../services/database.service';
 import { ConnectivityService } from '../services/connectivity.service';
-
-interface DashboardResponse {
-  success: boolean;
-  message: string;
-  data?: {
-    totalProducts: number;
-    lowStock: number;
-    outOfStock: number;
-    healthyPercentage: number;
-    recentMovements: Movement[];
-    updatedAt: string;
-  };
-}
+import { InventoryApiService } from '../services/inventory-api.service';
 
 import {
   addOutline,
@@ -78,6 +64,7 @@ export class DashboardPage implements OnInit {
     private readonly router: Router,
     private readonly database: DatabaseService,
     private readonly connectivity: ConnectivityService,
+    private readonly api: InventoryApiService,
   ) {
   addIcons({
     addOutline,
@@ -133,18 +120,16 @@ export class DashboardPage implements OnInit {
       this.savingMovement = true;
       this.errorMessage = '';
       try {
-        await axios.post(API_ENDPOINTS.movimientos, {
+        await this.api.createMovement({
           product_id: this.movementProductId,
           type: this.movementType,
           quantity: this.movementQuantity,
           notes: this.movementNotes.trim() || null,
-        }, { timeout: 10000 });
+        });
         this.showMovementForm = false;
         await this.loadDashboard();
       } catch (error: unknown) {
-        this.errorMessage = axios.isAxiosError<{ error?: string }>(error) && error.response?.data?.error
-          ? String(error.response.data.error)
-          : 'No se pudo registrar el movimiento.';
+        this.errorMessage = this.api.getErrorMessage(error, 'No se pudo registrar el movimiento.');
       } finally {
         this.savingMovement = false;
         this.changeDetector.detectChanges();
@@ -178,18 +163,7 @@ export class DashboardPage implements OnInit {
       this.updatedAt = new Date(cachedDashboard.updatedAt);
     }
 
-    const response = await axios.get<DashboardResponse>(API_ENDPOINTS.dashboard, {
-      timeout: 10000,
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.message || 'No se pudo cargar el dashboard.');
-    }
-
-    const dashboard = response.data.data;
+    const dashboard = await this.api.getDashboard();
     this.connectivity.markOnline();
 
     this.totalProducts = dashboard.totalProducts;
@@ -201,17 +175,7 @@ export class DashboardPage implements OnInit {
       ? new Date(dashboard.updatedAt)
       : null;
 
-    const productsResponse = await axios.get<{ success: boolean; data?: Product[] }>(API_ENDPOINTS.productos, {
-      timeout: 10000,
-    });
-    if (productsResponse.data.success && productsResponse.data.data) {
-      this.products = productsResponse.data.data.map((product) => ({
-        ...product,
-        id: Number(product.id),
-        price: Number(product.price),
-        available: Number(product.available),
-      }));
-    }
+    this.products = await this.api.getProducts();
 
     if (this.database.isAvailable) {
       await this.database.saveDashboard({
@@ -231,11 +195,7 @@ export class DashboardPage implements OnInit {
     }
 
     if (this.movements.length === 0) {
-      this.errorMessage =
-        axios.isAxiosError<{ error?: string }>(error) &&
-        error.response?.data?.error
-          ? error.response.data.error
-          : 'No se pudo cargar el dashboard desde la API.';
+      this.errorMessage = this.api.getErrorMessage(error, 'No se pudo cargar el dashboard desde la API.');
     }
   } finally {
     this.loading = false;

@@ -1,8 +1,7 @@
 import { Injectable } from '@angular/core';
-import axios from 'axios';
-import { API_ENDPOINTS } from '../config/api.config';
 import { ConnectivityService } from './connectivity.service';
 import { DatabaseService, Product } from './database.service';
+import { InventoryApiService } from './inventory-api.service';
 
 @Injectable({
   providedIn: 'root',
@@ -14,6 +13,7 @@ export class ProductSyncService {
   constructor(
     private readonly database: DatabaseService,
     private readonly connectivity: ConnectivityService,
+    private readonly api: InventoryApiService,
   ) {}
 
   start(): void {
@@ -37,14 +37,12 @@ export class ProductSyncService {
       const pendingProducts = await this.database.getPendingProducts();
       for (const pendingProduct of pendingProducts) {
         try {
-          const response = await axios.post<Product>(API_ENDPOINTS.productos, {
+          const product = await this.api.createProduct({
             name: pendingProduct.name,
             code: pendingProduct.code,
             price: pendingProduct.price,
             available: pendingProduct.available,
-          }, { timeout: 10000 });
-
-          const product = this.normalizeProduct(response.data);
+          });
           await this.database.replacePendingProduct(pendingProduct.id, product);
         } catch (error: unknown) {
           if (this.connectivity.isConnectionError(error)) {
@@ -58,12 +56,4 @@ export class ProductSyncService {
     }
   }
 
-  private normalizeProduct(product: Product): Product {
-    return {
-      ...product,
-      id: Number(product.id),
-      price: Number(product.price),
-      available: Number(product.available),
-    };
-  }
 }

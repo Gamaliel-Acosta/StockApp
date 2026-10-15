@@ -10,6 +10,8 @@
     </ion-button>
   </section>
 
+  <ion-text color="medium" *ngIf="loading"><p class="form-message">Cargando información del perfil...</p></ion-text>
+
   <form (ngSubmit)="saveProfile()" #profileForm="ngForm">
     <section class="profile-card main-card" aria-labelledby="profile-title">
       <div class="card-title">

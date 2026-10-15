@@ -5,7 +5,7 @@
 1. Copia esta carpeta como `C:\xampp\htdocs\stockapp-api`.
 2. Importa `inventario_computadoras.sql` en phpMyAdmin si es una instalacion nueva.
 3. Si ya tienes la base creada, ejecuta una sola vez `usuarios_perfil_migracion.sql`.
-4. Verifica que Apache y MySQL esten iniciados. La aplicacion movil debe apuntar a la IP de tu PC y al puerto de Apache, por ejemplo `192.168.1.6:80`.
+4. Verifica que Apache y MySQL esten iniciados. Apache utiliza el puerto `8080`; la aplicacion movil debe apuntar a la IP de tu PC, por ejemplo `192.168.1.6:8080`.
 
 La API de perfil queda disponible en:
 

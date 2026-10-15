@@ -12,7 +12,6 @@ import {
 } from '@ionic/angular';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Preferences } from '@capacitor/preferences';
-import axios from 'axios';
 import { addIcons } from 'ionicons';
 import {
   call,
@@ -30,7 +29,9 @@ import {
   settings,
   shieldCheckmark,
 } from 'ionicons/icons';
-import { API_ENDPOINTS } from '../config/api.config';
+import { InventoryApiService, UserProfile } from '../services/inventory-api.service';
+
+const LEGACY_PROFILE_PHOTO_KEY = 'profilePhoto';
 
 @Component({
   selector: 'app-perfil',
@@ -59,12 +60,14 @@ export class PerfilPage implements OnInit {
   profilePhoto = '';
   savedMessage = '';
   errorMessage = '';
+  loading = false;
   saving = false;
   editing = false;
 
   constructor(
     private readonly actionSheetController: ActionSheetController,
     private readonly changeDetector: ChangeDetectorRef,
+    private readonly api: InventoryApiService,
   ) {
     addIcons({
       call,
@@ -85,30 +88,26 @@ export class PerfilPage implements OnInit {
   }
 
   async ngOnInit(): Promise<void> {
-    await this.loadProfilePhoto();
     const currentUser = this.readCurrentUser();
     this.userId = currentUser.id ?? '';
     this.applyUser(currentUser);
+    await this.loadProfilePhoto();
 
     if (this.userId !== '') {
+      this.loading = true;
       try {
-        const response = await axios.get<ProfileResponse>(API_ENDPOINTS.perfil, {
-          params: { user_id: this.userId },
-          timeout: 10000,
-        });
-        if (!response.data.success || !response.data.data) {
-          throw new Error(response.data.message || 'No se pudo cargar el perfil.');
-        }
-        this.applyUser(response.data.data);
-        this.persistUser(response.data.data);
+        const profile = await this.api.getProfile(this.userId);
+        this.applyUser(profile);
+        this.persistUser(profile);
       } catch (error: unknown) {
-        this.errorMessage = this.apiErrorMessage(error, 'No se pudo cargar la información del usuario.');
+        this.errorMessage = this.api.getErrorMessage(error, 'No se pudo cargar la información del usuario.');
+      } finally {
+        this.loading = false;
+        this.changeDetector.detectChanges();
       }
     } else {
       this.errorMessage = 'No se encontró el usuario actual.';
     }
-
-    await this.loadProfilePhoto();
   }
 
   ionViewWillEnter(): void {
@@ -146,16 +145,13 @@ export class PerfilPage implements OnInit {
     this.errorMessage = '';
     this.savedMessage = '';
     try {
-      const response = await axios.patch<ProfileResponse>(API_ENDPOINTS.perfil, payload, { timeout: 10000 });
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.message || 'No se pudo guardar el perfil.');
-      }
-      this.applyUser(response.data.data);
-      this.persistUser(response.data.data);
+      const profile = await this.api.updateProfile(payload);
+      this.applyUser(profile);
+      this.persistUser(profile);
       this.savedMessage = 'La información se guardó correctamente.';
       this.editing = false;
     } catch (error: unknown) {
-      this.errorMessage = this.apiErrorMessage(error, 'No se pudo guardar la información del usuario.');
+      this.errorMessage = this.api.getErrorMessage(error, 'No se pudo guardar la información del usuario.');
     } finally {
       this.saving = false;
       this.changeDetector.detectChanges();
@@ -189,7 +185,7 @@ export class PerfilPage implements OnInit {
       if (!photo.dataUrl) throw new Error('La imagen seleccionada no está disponible.');
       const optimizedPhoto = await this.optimizePhoto(photo.dataUrl);
       this.profilePhoto = optimizedPhoto;
-      localStorage.setItem('profilePhoto', optimizedPhoto);
+      await this.saveProfilePhoto(optimizedPhoto);
       this.changeDetector.detectChanges();
     } catch (error: unknown) {
       if (error instanceof Error && /cancel/i.test(error.message)) return;
@@ -199,19 +195,72 @@ export class PerfilPage implements OnInit {
   }
 
   private async loadProfilePhoto(): Promise<void> {
-    const localPhoto = localStorage.getItem('profilePhoto');
-    if (localPhoto) {
-      this.profilePhoto = localPhoto;
+    const storageKey = this.getProfilePhotoKey();
+    if (!storageKey) {
+      this.profilePhoto = '';
       this.changeDetector.detectChanges();
       return;
     }
 
-    const { value: legacyPhoto } = await Preferences.get({ key: 'profilePhoto' });
+    const localPhoto = localStorage.getItem(storageKey);
+    if (localPhoto) {
+      this.profilePhoto = localPhoto;
+      await this.clearLegacyProfilePhoto();
+      this.changeDetector.detectChanges();
+      return;
+    }
+
+    const { value: storedPhoto } = await Preferences.get({ key: storageKey });
+    if (storedPhoto) {
+      localStorage.setItem(storageKey, storedPhoto);
+      this.profilePhoto = storedPhoto;
+      await this.clearLegacyProfilePhoto();
+      this.changeDetector.detectChanges();
+      return;
+    }
+
+    const legacyLocalPhoto = localStorage.getItem(LEGACY_PROFILE_PHOTO_KEY);
+    if (legacyLocalPhoto) {
+      this.profilePhoto = legacyLocalPhoto;
+      localStorage.setItem(storageKey, legacyLocalPhoto);
+      localStorage.removeItem(LEGACY_PROFILE_PHOTO_KEY);
+      await this.clearLegacyProfilePhoto();
+      this.changeDetector.detectChanges();
+      return;
+    }
+
+    const { value: legacyPhoto } = await Preferences.get({ key: LEGACY_PROFILE_PHOTO_KEY });
     if (legacyPhoto) {
-      localStorage.setItem('profilePhoto', legacyPhoto);
+      localStorage.setItem(storageKey, legacyPhoto);
+      await Preferences.set({ key: storageKey, value: legacyPhoto });
       this.profilePhoto = legacyPhoto;
+      await this.clearLegacyProfilePhoto();
       this.changeDetector.detectChanges();
     }
+  }
+
+  private async saveProfilePhoto(photo: string): Promise<void> {
+    const storageKey = this.getProfilePhotoKey();
+    if (!storageKey) {
+      throw new Error('No se encontró el usuario actual.');
+    }
+
+    localStorage.setItem(storageKey, photo);
+    await Preferences.set({ key: storageKey, value: photo });
+    await this.clearLegacyProfilePhoto();
+  }
+
+  private async clearLegacyProfilePhoto(): Promise<void> {
+    localStorage.removeItem(LEGACY_PROFILE_PHOTO_KEY);
+    await Preferences.remove({ key: LEGACY_PROFILE_PHOTO_KEY });
+  }
+
+  private getProfilePhotoKey(): string | null {
+    if (this.userId === '' || this.userId === null || this.userId === undefined) {
+      return null;
+    }
+
+    return `profilePhoto:${String(this.userId)}`;
   }
 
   private optimizePhoto(dataUrl: string): Promise<string> {
@@ -262,27 +311,4 @@ export class PerfilPage implements OnInit {
     localStorage.setItem('user', JSON.stringify(user));
   }
 
-  private apiErrorMessage(error: unknown, fallback: string): string {
-    if (axios.isAxiosError<{ error?: string; message?: string }>(error)) {
-      return error.response?.data?.error || error.response?.data?.message || fallback;
-    }
-    return error instanceof Error ? error.message : fallback;
-  }
-}
-
-interface UserProfile {
-  id?: number | string;
-  name?: string;
-  username?: string | null;
-  email?: string;
-  phone?: string | null;
-  role?: string;
-  createdAt?: string;
-  lastLoginAt?: string | null;
-}
-
-interface ProfileResponse {
-  success: boolean;
-  message?: string;
-  data?: UserProfile;
 }
